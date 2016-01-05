@@ -1547,6 +1547,8 @@ API_EXPORT int CALL_CONV LMS_ResetLMSMCU(lms_device_t *device);
 
 API_EXPORT int CALL_CONV LMS_SetActiveChipID(lms_device_t *device, unsigned id);
 
+API_EXPORT int CALL_CONV LMS_ReadRawBuffer(lms_device_t *device, char* buffer, unsigned length);
+
 API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqRxMHz, double *freqTxMHz);
 
 /**

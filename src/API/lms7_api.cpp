@@ -1632,6 +1632,12 @@ API_EXPORT int CALL_CONV LMS_SetActiveChipID(lms_device_t *device, unsigned id)
     return lms->SetActiveChip(id);
 }
 
+API_EXPORT int CALL_CONV LMS_ReadRawBuffer(lms_device_t *device, char* buffer, unsigned length)
+{
+    LMS7_Device* lms = (LMS7_Device*)device;
+    return lms->GetConnection()->ReadRawBuffer(buffer,length);
+}
+
 API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqRxMHz, double *freqTxMHz)
 {
     LMS7_Device* lms = (LMS7_Device*)device;

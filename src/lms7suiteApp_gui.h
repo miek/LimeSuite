@@ -76,6 +76,7 @@ class AppFrame_view : public wxFrame
 		virtual void OnShowBoardControls( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnShowQSpark( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnAbout( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnShowDPDTest( wxCommandEvent& event ) { event.Skip(); }
 		
 	
 	public:

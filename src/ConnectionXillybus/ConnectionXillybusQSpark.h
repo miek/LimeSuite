@@ -42,6 +42,8 @@ public:
 
 	//hooks to update FPGA plls when baseband interface data rate is changed
 	int UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate) override;
+
+        int ReadRawBuffer(char* buffer, unsigned length) override;
         int UpdateThreads() override;
         int UploadWFM(const void* const* samples, uint8_t chCount, size_t sample_count, StreamConfig::StreamDataFormat format) override;
 protected:

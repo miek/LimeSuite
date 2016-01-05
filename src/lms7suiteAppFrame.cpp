@@ -39,6 +39,7 @@
 using namespace std;
 using namespace lime;
 
+#include "DPDTest.h"
 ///////////////////////////////////////////////////////////////////////////
 
 LMS7SuiteAppFrame* LMS7SuiteAppFrame::obj_ptr=nullptr;
@@ -79,11 +80,15 @@ void LMS7SuiteAppFrame::HandleLMSevent(wxCommandEvent& event)
             wxPostEvent(this, evt);
         }
 
-
+        LMS_GetSampleRate(lmsControl,LMS_CH_RX,0,&freq,NULL);
         if (fftviewer)
         {
-            LMS_GetSampleRate(lmsControl,LMS_CH_RX,0,&freq,NULL);
+            
             fftviewer->SetNyquistFrequency(freq / 2);
+        }
+        if (DPDTestGui)
+        {
+            DPDTestGui->SetNyquist(freq / 2);
         }
     }
 /*
@@ -172,6 +177,7 @@ LMS7SuiteAppFrame::LMS7SuiteAppFrame( wxWindow* parent ) :
     boardControlsGui = nullptr;
     lmsControl = LMS7_Device::CreateDevice(nullptr);
     qSparkGui = nullptr;
+    DPDTestGui = nullptr;
 
     mContent->Initialize(lmsControl);
     Connect(CGEN_FREQUENCY_CHANGED, wxCommandEventHandler(LMS7SuiteAppFrame::HandleLMSevent), NULL, this);
@@ -228,7 +234,7 @@ void LMS7SuiteAppFrame::OnShowConnectionSettings( wxCommandEvent& event )
     Bind(DATA_PORT_CONNECTED, wxCommandEventHandler(LMS7SuiteAppFrame::OnDataBoardConnect), this);
     Bind(CONTROL_PORT_DISCONNECTED, wxCommandEventHandler(LMS7SuiteAppFrame::OnControlBoardConnect), this);
     Bind(DATA_PORT_DISCONNECTED, wxCommandEventHandler(LMS7SuiteAppFrame::OnDataBoardConnect), this);
-    dlg.ShowModal();
+	dlg.ShowModal();
 }
 
 void LMS7SuiteAppFrame::OnAbout( wxCommandEvent& event )
@@ -642,3 +648,25 @@ void LMS7SuiteAppFrame::OnQSparkClose(wxCloseEvent& event)
     qSparkGui = nullptr;
 }
 
+
+void LMS7SuiteAppFrame::OnDPDTestClose(wxCloseEvent& event)
+{
+    DPDTestGui->Destroy();
+    DPDTestGui = nullptr;
+}
+
+void LMS7SuiteAppFrame::OnShowDPDTest(wxCommandEvent& event)
+{
+    if (DPDTestGui) //it's already opened
+        DPDTestGui->Show();
+    else
+    {
+        DPDTestGui = new DPDTest(this, wxNewId(), _("DPDTest"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+        DPDTestGui->Initialize(lmsControl);
+        double samplingFreq;
+        LMS_GetSampleRate(lmsControl, LMS_CH_RX, 0, &samplingFreq, NULL);
+        DPDTestGui->SetNyquist(samplingFreq / 2e6);
+        DPDTestGui->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(LMS7SuiteAppFrame::OnDPDTestClose), NULL, this);
+        DPDTestGui->Show();
+    }
+}

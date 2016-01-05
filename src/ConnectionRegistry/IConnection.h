@@ -203,6 +203,8 @@ public:
      */
     virtual DeviceInfo GetDeviceInfo(void);
 
+    virtual int ReadRawBuffer(char* buffer, unsigned length) { return 0; };
+
     /***********************************************************************
      * Serial API
      **********************************************************************/

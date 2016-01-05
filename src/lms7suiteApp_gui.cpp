@@ -95,6 +95,9 @@ AppFrame_view::AppFrame_view( wxWindow* parent, wxWindowID id, const wxString& t
 	wxMenuItem* mnuQSpark;
 	mnuQSpark = new wxMenuItem( mnuModules, wxID_ANY, wxString( wxT("QSpark") ) , wxEmptyString, wxITEM_NORMAL );
 	mnuModules->Append( mnuQSpark );
+	wxMenuItem* mnuDPDTest;
+	mnuDPDTest = new wxMenuItem( mnuModules, wxID_ANY, wxString( wxT("DPD Test") ) , wxEmptyString, wxITEM_NORMAL );
+	mnuModules->Append( mnuDPDTest );
 	
 	mbar->Append( mnuModules, wxT("Modules") ); 
 	
@@ -141,6 +144,7 @@ AppFrame_view::AppFrame_view( wxWindow* parent, wxWindowID id, const wxString& t
 	this->Connect( mnuBoardControls->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( AppFrame_view::OnShowBoardControls ) );
 	this->Connect( mnuQSpark->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( AppFrame_view::OnShowQSpark ) );
 	this->Connect( menuHelpAbout->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( AppFrame_view::OnAbout ) );
+	this->Connect( mnuDPDTest->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( AppFrame_view::OnShowDPDTest ) );
 }
 
 AppFrame_view::~AppFrame_view()
@@ -164,6 +168,7 @@ AppFrame_view::~AppFrame_view()
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( AppFrame_view::OnShowBoardControls ) );
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( AppFrame_view::OnShowQSpark ) );
 	this->Disconnect( idMenuAbout, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( AppFrame_view::OnAbout ) );
+	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( AppFrame_view::OnShowDPDTest ) );
 	
 }
 

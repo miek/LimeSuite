@@ -480,6 +480,55 @@ void ConnectionXillybusQSpark::AbortReading()
 #endif
 }
 
+int ConnectionXillybusQSpark::UploadWFM(const void* const* samples, uint8_t chCount, size_t sample_count, StreamConfig::StreamDataFormat format)
+{
+    WriteRegister(0x000C, chCount == 1 ? 0x1 : 0x3); //channels 0,1
+    WriteRegister(0x000E, 0x2); //12bit samples
+    WriteRegister(0x000D, 0x0004); //WFM_LOAD
+
+    lime::FPGA_DataPacket pkt;
+    size_t samplesUsed = 0;
+
+    const complex16_t* const* src = (const complex16_t* const*)samples;
+    int cnt = sample_count;
+
+    const lime::complex16_t** batch = new const lime::complex16_t*[chCount];
+    while (cnt > 0)
+    {
+        pkt.counter = 0;
+        pkt.reserved[0] = 0;
+        int samplesToSend = cnt > 1360 / chCount ? 1360 / chCount : cnt;
+        cnt -= samplesToSend;
+
+        for (uint8_t i = 0; i<chCount; ++i)
+            batch[i] = &src[i][samplesUsed];
+        samplesUsed += samplesToSend;
+
+        size_t bufPos = 0;
+        lime::fpga::Samples2FPGAPacketPayload(batch, samplesToSend, chCount, format, pkt.data, &bufPos);
+        int payloadSize = (bufPos / 4) * 4;
+        if (bufPos % 4 != 0)
+            printf("Packet samples count not multiple of 4\n");
+        pkt.reserved[2] = (payloadSize >> 8) & 0xFF; //WFM loading
+        pkt.reserved[1] = payloadSize & 0xFF; //WFM loading
+        pkt.reserved[0] = 0x1 << 5; //WFM loading
+
+        long bToSend = 16 + payloadSize;
+        SendData((const char*)&pkt, bToSend, 1000);
+    }
+    delete[] batch;
+#ifndef __unix__
+    Sleep(1000);
+#else
+    sleep(1);
+#endif
+    AbortSending();
+    if (cnt == 0)
+        return 0;
+    else
+        return ReportError(-1, "Failed to upload waveform");
+}
+
 /**
 	@brief  sends data to board
 	@param *buffer buffer to send
@@ -1103,52 +1152,30 @@ int ConnectionXillybusQSpark::UpdateThreads()
     return 0;
 }
 
-int ConnectionXillybusQSpark::UploadWFM(const void* const* samples, uint8_t chCount, size_t sample_count, StreamConfig::StreamDataFormat format)
+int ConnectionXillybusQSpark::ReadRawBuffer(char* buffer, unsigned length)
 {
-    WriteRegister(0x000C, 0x3); //channels 0,1
-    WriteRegister(0x000E, 0x2); //12bit samples
-    WriteRegister(0x000D, 0x0004); //WFM_LOAD
+    //fpga::StopStreaming(this);
+    //fpga::ResetTimestamp(this);
+    //USB FIFO reset
+    // TODO : USB FIFO reset command for IConnection
+    LMS64CProtocol::GenericPacket ctrPkt;
+    ctrPkt.cmd = CMD_USB_FIFO_RST;
+    ctrPkt.outBuffer.push_back(0x00);
+    TransferPacket(ctrPkt);
+    //fpga::StartStreaming(this);
 
-    lime::FPGA_DataPacket pkt;
-    size_t samplesUsed = 0;
+    vector<uint32_t> addrs;
+    vector<uint32_t> values;
+    addrs.push_back(0x0040); values.push_back(length/12);
+    addrs.push_back(0x0041); values.push_back(0);
+    this->WriteRegisters(addrs.data(), values.data(), values.size());
+    addrs.clear(); values.clear();
+    addrs.push_back(0x0041); values.push_back(1);
+    this->WriteRegisters(addrs.data(), values.data(), values.size());
 
-    const complex16_t* const* src = (const complex16_t* const*)samples;
-    int cnt = sample_count;
+    int ret = ReceiveData(buffer, length, 1000);
 
-    const lime::complex16_t** batch = new const lime::complex16_t*[chCount];
-    while(cnt > 0)
-    {
-        pkt.counter = 0;
-        pkt.reserved[0] = 0;
-        int samplesToSend = cnt > 1360/chCount ? 1360/chCount : cnt;
-        cnt -= samplesToSend;
-
-        for(uint8_t i=0; i<chCount; ++i)
-            batch[i] = &src[i][samplesUsed];
-        samplesUsed += samplesToSend;
-
-        size_t bufPos = 0;
-        lime::fpga::Samples2FPGAPacketPayload(batch, samplesToSend, chCount, format, pkt.data, &bufPos);
-        int payloadSize = (bufPos / 4) * 4;
-        if(bufPos % 4 != 0)
-            printf("Packet samples count not multiple of 4\n");
-        pkt.reserved[2] = (payloadSize >> 8) & 0xFF; //WFM loading
-        pkt.reserved[1] = payloadSize & 0xFF; //WFM loading
-        pkt.reserved[0] = 0x1 << 5; //WFM loading
-
-        long bToSend = 16+payloadSize;
-        if (SendData((const char*)&pkt,bToSend,1000)!=bToSend)
-            break;
-    }
-    delete[] batch;
-#ifndef __unix__
-    Sleep(1000);
-#else
-    sleep(1);
-#endif
-    AbortSending();
-    if(cnt == 0)
-        return 0;
-    else
-        return ReportError(-1, "Failed to upload waveform");
+    AbortReading();
+    //fpga::StopStreaming(this);
+    return ret;
 }
