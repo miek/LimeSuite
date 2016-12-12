@@ -107,7 +107,7 @@ void LMS7002M::SetConnection(IConnection* port, const size_t devIndex, IConnecti
 
     if (controlPort != nullptr)
     {
-        addrLMS7002M = controlPort->GetDeviceInfo().addrsLMS7002M.at(devIndex);
+        addrLMS7002M = controlPort->GetDeviceInfo().addrsLMS7002M.at(0) + devIndex;
         mcuControl->Initialize(port);
     }
     if(samplesPort == nullptr)

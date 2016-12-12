@@ -65,6 +65,7 @@ class LMS7SuiteAppFrame : public AppFrame_view
         void OnChangeCacheSettings(wxCommandEvent& event);
         void OnQSparkClose(wxCloseEvent& event);
         void OnShowQSpark(wxCommandEvent& event);
+        void OnLmsChanged(wxCommandEvent& event);
     public:
 		/** Constructor */
 		LMS7SuiteAppFrame( wxWindow* parent );

@@ -11,6 +11,7 @@ ILimeSDRStreaming::ILimeSDRStreaming()
 {
     rxRunning = false;
     txRunning = false;
+    generateData = false;
 }
 ILimeSDRStreaming::~ILimeSDRStreaming()
 {
@@ -298,7 +299,7 @@ int ILimeSDRStreaming::UpdateThreads()
         fpga::StartStreaming(this);
     }
     else if(not needTx and not needRx)
-    {
+    {   
         //disable FPGA streaming
         fpga::StopStreaming(this);
     }

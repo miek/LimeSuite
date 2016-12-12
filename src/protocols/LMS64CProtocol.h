@@ -79,10 +79,12 @@ public:
         {
             cmd = CMD_GET_INFO;
             status = STATUS_UNDEFINED;
+            periphID = 0;
         }
 
         eCMD_LMS cmd;
         eCMD_STATUS status;
+        unsigned periphID;
         std::vector<unsigned char> outBuffer;
         std::vector<unsigned char> inBuffer;
     };
@@ -105,12 +107,13 @@ public:
         static const int maxDataLength = 56;
         ProtocolLMS64C() :cmd(0),status(STATUS_UNDEFINED),blockCount(0)
         {
-            memset(reserved, 0, 5);
+            memset(reserved, 0, 4);
         };
         unsigned char cmd;
         unsigned char status;
         unsigned char blockCount;
-        unsigned char reserved[5];
+        unsigned char periphID;
+        unsigned char reserved[4];
         unsigned char data[maxDataLength];
     };
 
@@ -184,14 +187,14 @@ public:
     int ProgramMCU(const uint8_t *buffer, const size_t length, const MCU_PROG_MODE mode, ProgrammingCallback callback) override;
 private:
 
-    int WriteLMS7002MSPI(const uint32_t *writeData, const size_t size);
-    int ReadLMS7002MSPI(const uint32_t *writeData, uint32_t *readData, const size_t size);
+    int WriteLMS7002MSPI(const uint32_t *writeData, const size_t size, const unsigned periphID = 0);
+    int ReadLMS7002MSPI(const uint32_t *writeData, uint32_t *readData, const size_t size, const unsigned periphID = 0);
 
     int WriteSi5351I2C(const std::string &data);
     int ReadSi5351I2C(const size_t numBytes, std::string &data);
 
-    int WriteADF4002SPI(const uint32_t *writeData, const size_t size);
-    int ReadADF4002SPI(const uint32_t *writeData, uint32_t *readData, const size_t size);
+    int WriteADF4002SPI(const uint32_t *writeData, const size_t size, const unsigned periphID = 0);
+    int ReadADF4002SPI(const uint32_t *writeData, uint32_t *readData, const size_t size, const unsigned periphID = 0);
 
     unsigned char* PreparePacket(const GenericPacket &pkt, int &length, const eLMS_PROTOCOL protocol);
     int ParsePacket(GenericPacket &pkt, const unsigned char* buffer, const int length, const eLMS_PROTOCOL protocol);

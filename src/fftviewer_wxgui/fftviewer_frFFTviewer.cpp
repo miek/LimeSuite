@@ -13,9 +13,15 @@
 using namespace std;
 using namespace lime;
 
-void fftviewer_frFFTviewer::Initialize(lms_device_t* pDataPort)
+void fftviewer_frFFTviewer::Initialize(lms_device_t* pDataPort, unsigned index)
 {
     lmsControl = pDataPort;
+    lmsIndex = index;
+    for (unsigned i =0; i < this->cMaxChCount ; i++)
+    {
+        this->rxStreams[i].handle = 0;
+        this->txStreams[i].handle = 0;
+    }
 }
 
 fftviewer_frFFTviewer::fftviewer_frFFTviewer( wxWindow* parent )
@@ -175,12 +181,12 @@ void fftviewer_frFFTviewer::StopStreaming()
         return;
     stopProcessing.store(true);
     threadProcessing.join();
-	btnStartStop->SetLabel(_("START"));
-	cmbStreamType->Enable();
-	spinFFTsize->Enable();
-	chkCaptureToFile->Enable();
-	spinCaptureCount->Enable();
-}
+    btnStartStop->SetLabel(_("START"));
+    cmbStreamType->Enable();
+    spinFFTsize->Enable();
+    chkCaptureToFile->Enable();
+    spinCaptureCount->Enable();
+    }
 
 void fftviewer_frFFTviewer::OnUpdateStats(wxTimerEvent& event)
 {
@@ -202,7 +208,7 @@ void fftviewer_frFFTviewer::OnUpdateStats(wxTimerEvent& event)
         gaugeTxBuffer->SetValue((int)TxFilled);
         lblTxDataRate->SetLabel(printDataRate(txStats.linkRate));
     }
-}
+    }
 
 void fftviewer_frFFTviewer::OnUpdatePlots(wxThreadEvent& event)
 {
@@ -291,8 +297,6 @@ void fftviewer_frFFTviewer::OnUpdatePlots(wxThreadEvent& event)
 void fftviewer_frFFTviewer::StreamingLoop(fftviewer_frFFTviewer* pthis, const unsigned int fftSize, const int channelsCount, const uint32_t format)
 {
     bool runTx = true;
-    const int cMaxChCount = 2;
-    const int test_count = fftSize;// / 680*26;//4096*16;
     int avgCount = pthis->spinAvgCount->GetValue();
     int wndFunction = pthis->windowFunctionID.load();
 
@@ -304,38 +308,43 @@ void fftviewer_frFFTviewer::StreamingLoop(fftviewer_frFFTviewer* pthis, const un
 
     DataToGUI localDataResults;
     localDataResults.nyquist_Hz = 7.68e6;
-    localDataResults.samplesI[0].resize(fftSize, 0);
-    localDataResults.samplesI[1].resize(fftSize, 0);
-    localDataResults.samplesQ[0].resize(fftSize, 0);
-    localDataResults.samplesQ[1].resize(fftSize, 0);
-    localDataResults.fftBins_dbFS[0].resize(fftSize, 0);
-    localDataResults.fftBins_dbFS[1].resize(fftSize, 0);
+    for (unsigned i = 0; i < cMaxChCount; i++)
+    {
+        localDataResults.samplesI[i].resize(fftSize, 0);
+        localDataResults.samplesQ[i].resize(fftSize, 0);
+        localDataResults.fftBins_dbFS[i].resize(fftSize, 0);
+    }
+
     buffers = new lime::complex16_t*[channelsCount];
     for (int i = 0; i < channelsCount; ++i)
-        buffers[i] = new complex16_t[test_count];
+        buffers[i] = new complex16_t[fftSize];
 
     vector<complex16_t> captureBuffer[cMaxChCount];
     uint32_t samplesToCapture[cMaxChCount];
     if(pthis->captureSamples.load() == true)
-        for(int ch=0; ch<channelsCount; ++ch)
-        {
-            samplesToCapture[ch] = pthis->spinCaptureCount->GetValue();
-            captureBuffer[ch].resize(samplesToCapture[ch]);
-        }
+    for(int ch=0; ch<channelsCount; ++ch)
+    {
+        samplesToCapture[ch] = pthis->spinCaptureCount->GetValue();
+        captureBuffer[ch].resize(samplesToCapture[ch]);
+    }
 
     auto fmt = lms_stream_t::LMS_FMT_I12;
+    unsigned chOffset = 0;
+    
+    if ((channelsCount < 3)&&(pthis->lmsIndex == 1) && (LMS_GetNumChannels(pthis->lmsControl, false)>2))
+        chOffset = 2;
     for(int i=0; i<channelsCount; ++i)
     {
-        pthis->rxStreams[i].channel = i;
-        pthis->rxStreams[i].fifoSize = test_count*40;
+        pthis->rxStreams[i].channel = i+chOffset;
+        pthis->rxStreams[i].fifoSize = fftSize*40;
         pthis->rxStreams[i].isTx = false;
         pthis->rxStreams[i].dataFmt = fmt;
         pthis->rxStreams[i].throughputVsLatency = 1;
         LMS_SetupStream(pthis->lmsControl, &pthis->rxStreams[i]);
 
         pthis->txStreams[i].handle = 0;
-        pthis->txStreams[i].channel = i;
-        pthis->txStreams[i].fifoSize = test_count*40;
+        pthis->txStreams[i].channel = i+chOffset;
+        pthis->txStreams[i].fifoSize = fftSize*40;
         pthis->txStreams[i].isTx = true;
         pthis->txStreams[i].dataFmt = fmt;
         pthis->txStreams[i].throughputVsLatency = 1;
@@ -365,23 +374,23 @@ void fftviewer_frFFTviewer::StreamingLoop(fftviewer_frFFTviewer* pthis, const un
     {
         for(int a=fftCounter; a<avgCount; ++a)
         {
-            uint32_t samplesPopped[2] = {0, 0};
+            uint32_t samplesPopped[cMaxChCount] = {0};
             uint64_t ts[2];
             for(int i=0; i<channelsCount; ++i)
             {
-                samplesPopped[i] += LMS_RecvStream(&pthis->rxStreams[i], &buffers[i][samplesPopped[i]], test_count, &meta, 1000);
+                samplesPopped[i] += LMS_RecvStream(&pthis->rxStreams[i], &buffers[i][samplesPopped[i]], fftSize, &meta, 1000);
                 ts[i] = meta.timestamp + 1024 * 1024*2;
             }
 
-            uint32_t samplesPushed[2] = {0, 0};
+            uint32_t samplesPushed[cMaxChCount] = {0};
             for(int i=0; runTx && i<channelsCount; ++i)
             {
                 meta.timestamp = ts[i];
                 meta.waitForTimestamp = true;
                 samplesPushed[i] += LMS_SendStream(&pthis->txStreams[i], &buffers[i][samplesPushed[i]], samplesPopped[i], &meta, 1000);
             }
-
-            if(pthis->captureSamples.load())
+            
+           if(pthis->captureSamples.load())
             {
                 for(int ch=0; ch<channelsCount; ++ch)
                 {
@@ -395,34 +404,34 @@ void fftviewer_frFFTviewer::StreamingLoop(fftviewer_frFFTviewer* pthis, const un
 
             for (int ch = 0; ch < channelsCount; ++ch)
             {
-                //take only first buffer for time domain display
-                //reset fftBins for accumulation
+             //take only first buffer for time domain display
+            //reset fftBins for accumulation
                 for (unsigned i = 0; a==0 && i < fftSize; ++i)
-                {
-                    localDataResults.fftBins_dbFS[ch][i] = 0;
-                    localDataResults.samplesI[ch][i] = buffers[ch][i].i;
-                    localDataResults.samplesQ[ch][i] = buffers[ch][i].q;
-                }
-                for (unsigned i = 0; i < fftSize; ++i)
-                {
-                    m_fftCalcIn[i].r = buffers[ch][i].i * amplitudeCorrection * wndCoef[i];
-                    m_fftCalcIn[i].i = buffers[ch][i].q * amplitudeCorrection * wndCoef[i];
-                }
-
-                kiss_fft(m_fftCalcPlan, m_fftCalcIn, m_fftCalcOut);
-                ++fftCounter;
-                for(unsigned int i=0; i<fftSize; ++i)
-                {
-                    m_fftCalcOut[i].r /= fftSize;
-                    m_fftCalcOut[i].i /= fftSize;
-                }
-                int output_index = 0;
-                for (unsigned i = fftSize / 2 + 1; i < fftSize; ++i)
-                    localDataResults.fftBins_dbFS[ch][output_index++] += sqrt(m_fftCalcOut[i].r * m_fftCalcOut[i].r + m_fftCalcOut[i].i * m_fftCalcOut[i].i);
-                for (unsigned i = 0; i < fftSize / 2 + 1; ++i)
-                    localDataResults.fftBins_dbFS[ch][output_index++] += sqrt(m_fftCalcOut[i].r * m_fftCalcOut[i].r + m_fftCalcOut[i].i * m_fftCalcOut[i].i);
+            {
+                localDataResults.fftBins_dbFS[ch][i] = 0;
+                localDataResults.samplesI[ch][i] = buffers[ch][i].i;
+                localDataResults.samplesQ[ch][i] = buffers[ch][i].q;
             }
+            for (unsigned i = 0; i < fftSize; ++i)
+            {
+                m_fftCalcIn[i].r = buffers[ch][i].i * amplitudeCorrection * wndCoef[i];
+                m_fftCalcIn[i].i = buffers[ch][i].q * amplitudeCorrection * wndCoef[i];
+            }
+
+            kiss_fft(m_fftCalcPlan, m_fftCalcIn, m_fftCalcOut);
+                ++fftCounter;
+            for(unsigned int i=0; i<fftSize; ++i)
+            {
+                m_fftCalcOut[i].r /= fftSize;
+                m_fftCalcOut[i].i /= fftSize;
+            }
+            int output_index = 0;
+            for (unsigned i = fftSize / 2 + 1; i < fftSize; ++i)
+                localDataResults.fftBins_dbFS[ch][output_index++] += sqrt(m_fftCalcOut[i].r * m_fftCalcOut[i].r + m_fftCalcOut[i].i * m_fftCalcOut[i].i);
+            for (unsigned i = 0; i < fftSize / 2 + 1; ++i)
+                localDataResults.fftBins_dbFS[ch][output_index++] += sqrt(m_fftCalcOut[i].r * m_fftCalcOut[i].r + m_fftCalcOut[i].i * m_fftCalcOut[i].i);
         }
+            }
 
         t2 = chrono::high_resolution_clock::now();
         auto timePeriod = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
@@ -515,8 +524,7 @@ void fftviewer_frFFTviewer::SetNyquistFrequency(float freqHz)
 
 void fftviewer_frFFTviewer::OnChannelVisibilityChange(wxCommandEvent& event)
 {
-    const int channelCount = 2;
-    bool visibilities[channelCount];
+    bool visibilities[cMaxChCount];
 
     switch(event.GetInt())
     {

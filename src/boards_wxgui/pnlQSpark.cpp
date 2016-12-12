@@ -305,34 +305,21 @@ void pnlQSpark::OnbtnUpdateAll(wxCommandEvent& event)
 
 void pnlQSpark::OnConfigurePLL(wxCommandEvent &event)
 {
-    double FreqTxMHz, FreqRxMHz;
-    txtPllFreqTxMHz->GetValue().ToDouble(&FreqTxMHz);
-    txtPllFreqRxMHz->GetValue().ToDouble(&FreqRxMHz);
-
-    lime::fpga::FPGA_PLL_clock clocks[2];
-    //ADC
-    clocks[0].bypass = false;
-    clocks[0].index = 0;
-    clocks[0].outFrequency = FreqRxMHz*1e6;
-    clocks[0].phaseShift_deg = 0;
-
-    //DAC
-    clocks[1].bypass = false;
-    clocks[1].index = 1;
-    clocks[1].outFrequency = FreqTxMHz*1e6;
-    clocks[1].phaseShift_deg = 0;
-
-//  TODO
-    wxMessageBox(_("Not implemented"), _("Error"), wxICON_ERROR | wxOK);
-    return;
-//  if(lime::fpga::SetPllFrequency(m_serPort, 2, 30.72e6, clocks, 2) != 0)
-//      wxMessageBox(GetLastErrorMessage(), _("Error"), wxICON_ERROR | wxOK);
-//  else
+    if (!LMS_IsOpen(lmsControl, 1))
     {
-        OnNcoFrequencyChanged(event);
-        lblRealFreqTx->SetLabel(wxString::Format("Real: %g MHz", clocks[1].rd_actualFrequency / 1e6));
-        lblRealFreqRx->SetLabel(wxString::Format("Real: %g MHz", clocks[0].rd_actualFrequency / 1e6));
+        wxMessageBox(_("device not connected"), _("Error"), wxICON_ERROR | wxOK);
+        return;
     }
+
+    double freqTxMHz, freqRxMHz;
+    txtPllFreqTxMHz->GetValue().ToDouble(&freqTxMHz);
+    txtPllFreqRxMHz->GetValue().ToDouble(&freqRxMHz);
+    freqTxMHz *= 1e6;
+    freqRxMHz *= 1e6;
+    LMS_QSparkConfigPLL(lmsControl, &freqRxMHz, &freqTxMHz);
+
+    lblRealFreqTx->SetLabel(wxString::Format("Real: %g MHz", freqTxMHz / 1e6));
+    lblRealFreqRx->SetLabel(wxString::Format("Real: %g MHz", freqRxMHz / 1e6));
 }
 
 void pnlQSpark::OnNcoFrequencyChanged(wxCommandEvent& event)

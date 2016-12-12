@@ -23,9 +23,9 @@ const int LMS_RST_ACTIVATE = 1;
 const int LMS_RST_PULSE = 2;
 
 //! arbitrary spi constants used to dispatch calls
-#define LMS7002M_SPI_INDEX 0x10
-#define Si5351_I2C_ADDR 0x20
-#define ADF4002_SPI_INDEX 0x30
+#define LMS7002M_SPI_INDEX 0x100
+#define Si5351_I2C_ADDR 0x200
+#define ADF4002_SPI_INDEX 0x300
 
 static int convertStatus(const int &status, const LMS64CProtocol::GenericPacket &pkt)
 {
@@ -79,16 +79,16 @@ int LMS64CProtocol::TransactSPI(const int addr, const uint32_t *writeData, uint3
     }
 
     //perform spi writes when there is no read data
-    if (readData == nullptr) switch(addr)
+    if (readData == nullptr) switch(addr & (~int(0xFF)))
     {
-    case LMS7002M_SPI_INDEX: return this->WriteLMS7002MSPI(writeData, size);
+    case LMS7002M_SPI_INDEX: return this->WriteLMS7002MSPI(writeData, size, addr & 0xFF);
     case ADF4002_SPI_INDEX: return this->WriteADF4002SPI(writeData, size);
     }
 
     //otherwise perform reads into the provided buffer
-    if (readData != nullptr) switch(addr)
+    if (readData != nullptr) switch(addr & (~int(0xFF)))
     {
-    case LMS7002M_SPI_INDEX: return this->ReadLMS7002MSPI(writeData, readData, size);
+    case LMS7002M_SPI_INDEX: return this->ReadLMS7002MSPI(writeData, readData, size, addr & 0xFF);
     case ADF4002_SPI_INDEX: return this->ReadADF4002SPI(writeData, readData, size);
     }
 
@@ -145,10 +145,11 @@ int LMS64CProtocol::SetReferenceClockRate(const double rate)
 /***********************************************************************
  * LMS7002M SPI access
  **********************************************************************/
-int LMS64CProtocol::WriteLMS7002MSPI(const uint32_t *writeData, const size_t size)
+int LMS64CProtocol::WriteLMS7002MSPI(const uint32_t *writeData, const size_t size, const unsigned periphID)
 {
     GenericPacket pkt;
     pkt.cmd = CMD_LMS7002_WR;
+    pkt.periphID = periphID;
     for (size_t i = 0; i < size; ++i)
     {
         uint16_t addr = (writeData[i] >> 16) & 0x7fff;
@@ -164,10 +165,11 @@ int LMS64CProtocol::WriteLMS7002MSPI(const uint32_t *writeData, const size_t siz
     return convertStatus(status, pkt);
 }
 
-int LMS64CProtocol::ReadLMS7002MSPI(const uint32_t *writeData, uint32_t *readData, const size_t size)
+int LMS64CProtocol::ReadLMS7002MSPI(const uint32_t *writeData, uint32_t *readData, const size_t size, const unsigned periphID)
 {
     GenericPacket pkt;
     pkt.cmd = CMD_LMS7002_RD;
+    pkt.periphID = periphID;
     for (size_t i = 0; i < size; ++i)
     {
         uint16_t addr = (writeData[i] >> 16) & 0x7fff;
@@ -229,11 +231,11 @@ int LMS64CProtocol::ReadSi5351I2C(const size_t numBytes, std::string &data)
 /***********************************************************************
  * ADF4002 SPI access
  **********************************************************************/
-int LMS64CProtocol::WriteADF4002SPI(const uint32_t *writeData, const size_t size)
+int LMS64CProtocol::WriteADF4002SPI(const uint32_t *writeData, const size_t size, const unsigned periphID)
 {
     GenericPacket pkt;
     pkt.cmd = CMD_ADF4002_WR;
-
+    pkt.periphID = periphID;
     for (size_t i = 0; i < size; i++)
     {
         pkt.outBuffer.push_back((writeData[i] >> 16) & 0xff);
@@ -245,7 +247,7 @@ int LMS64CProtocol::WriteADF4002SPI(const uint32_t *writeData, const size_t size
     return convertStatus(status, pkt);
 }
 
-int LMS64CProtocol::ReadADF4002SPI(const uint32_t *writeData, uint32_t *readData, const size_t size)
+int LMS64CProtocol::ReadADF4002SPI(const uint32_t *writeData, uint32_t *readData, const size_t size, const unsigned periphID)
 {
     ReportError(ENOTSUP, "ReadADF4002SPI not supported");
     return -1;
@@ -491,7 +493,7 @@ int LMS64CProtocol::TransferPacket(GenericPacket& pkt)
         }
         ParsePacket(pkt, inBuffer, inDataPos, protocol);
     }
-    delete outBuffer;
+    delete[] outBuffer;
     delete[] inBuffer;
     return status;
 }
@@ -514,6 +516,7 @@ unsigned char* LMS64CProtocol::PreparePacket(const GenericPacket& pkt, int& leng
         int maxDataLength = packet.maxDataLength;
         packet.cmd = pkt.cmd;
         packet.status = pkt.status;
+        packet.periphID = pkt.periphID;
         int byteBlockRatio = 1; //block ratio - how many bytes in one block
         switch( packet.cmd )
         {
@@ -561,6 +564,7 @@ unsigned char* LMS64CProtocol::PreparePacket(const GenericPacket& pkt, int& leng
             int pktPos = j*packet.pktLength;
             buffer[pktPos] = packet.cmd;
             buffer[pktPos+1] = packet.status;
+            buffer[pktPos + 3] = packet.periphID;
             if(blockCount > (maxDataLength/byteBlockRatio))
             {
                 buffer[pktPos+2] = maxDataLength/byteBlockRatio;
@@ -568,7 +572,7 @@ unsigned char* LMS64CProtocol::PreparePacket(const GenericPacket& pkt, int& leng
             }
             else
                 buffer[pktPos+2] = blockCount;
-            memcpy(&buffer[pktPos+3], packet.reserved, sizeof(packet.reserved));
+            memcpy(&buffer[pktPos+4], packet.reserved, sizeof(packet.reserved));
             int bytesToPack = (maxDataLength/byteBlockRatio)*byteBlockRatio;
             for (int k = 0; k<bytesToPack && srcPos < pkt.outBuffer.size(); ++srcPos, ++k)
                 buffer[pktPos + 8 + k] = pkt.outBuffer[srcPos];

@@ -170,7 +170,7 @@ LMS7SuiteAppFrame::LMS7SuiteAppFrame( wxWindow* parent ) :
     spi = nullptr;
     novenaGui = nullptr;
     boardControlsGui = nullptr;
-    lmsControl = new LMS7_Device();
+    lmsControl = LMS7_Device::CreateDevice(nullptr);
     qSparkGui = nullptr;
 
     mContent->Initialize(lmsControl);
@@ -228,7 +228,7 @@ void LMS7SuiteAppFrame::OnShowConnectionSettings( wxCommandEvent& event )
     Bind(DATA_PORT_CONNECTED, wxCommandEventHandler(LMS7SuiteAppFrame::OnDataBoardConnect), this);
     Bind(CONTROL_PORT_DISCONNECTED, wxCommandEventHandler(LMS7SuiteAppFrame::OnControlBoardConnect), this);
     Bind(DATA_PORT_DISCONNECTED, wxCommandEventHandler(LMS7SuiteAppFrame::OnDataBoardConnect), this);
-	dlg.ShowModal();
+    dlg.ShowModal();
 }
 
 void LMS7SuiteAppFrame::OnAbout( wxCommandEvent& event )
@@ -239,7 +239,7 @@ void LMS7SuiteAppFrame::OnAbout( wxCommandEvent& event )
 
 void LMS7SuiteAppFrame::UpdateConnections(lms_device_t* lms7controlPort)
 {
-
+    mContent->Initialize(lmsControl);
     if(si5351gui)
         si5351gui->Initialize(lmsControl);
     if(fftviewer)
@@ -358,8 +358,15 @@ void LMS7SuiteAppFrame::OnShowFFTviewer(wxCommandEvent& event)
         lime::float_type freq;
         LMS_GetSampleRate(lmsControl,LMS_CH_RX,0,&freq,NULL);
         fftviewer->SetNyquistFrequency(freq / 2);
+        Bind(LMS_CHANGED, wxCommandEventHandler(LMS7SuiteAppFrame::OnLmsChanged), this);
     }
-    fftviewer->Initialize(lmsControl);
+    fftviewer->Initialize(lmsControl,this->mContent->GetLmsSelection());
+}
+
+void LMS7SuiteAppFrame::OnLmsChanged(wxCommandEvent& event)
+{
+    if (fftviewer)
+        fftviewer->Initialize(lmsControl,this->mContent->GetLmsSelection());
 }
 
 void LMS7SuiteAppFrame::OnADF4002Close(wxCloseEvent& event)

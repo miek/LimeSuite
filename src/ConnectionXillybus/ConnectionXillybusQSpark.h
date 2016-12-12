@@ -7,6 +7,7 @@
 #pragma once
 #include <ConnectionRegistry.h>
 #include <ILimeSDRStreaming.h>
+#include "ConnectionXillybus.h"
 #include <vector>
 #include <string>
 #include <atomic>
@@ -24,11 +25,12 @@
 
 namespace lime{
 
-class ConnectionXillybus : public ILimeSDRStreaming
+class ConnectionXillybusQSpark : public ILimeSDRStreaming
 {
 public:
-    ConnectionXillybus(const unsigned index);
-    ~ConnectionXillybus(void);
+    ConnectionXillybusQSpark(const unsigned index);
+    ConnectionXillybusQSpark(ConnectionXillybusQSpark &obj);
+    ~ConnectionXillybusQSpark(void);
 
 	int Open(const unsigned index);
 	void Close();
@@ -40,17 +42,18 @@ public:
 
 	//hooks to update FPGA plls when baseband interface data rate is changed
 	int UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate) override;
+        int UpdateThreads() override;
+        int UploadWFM(const void* const* samples, uint8_t chCount, size_t sample_count, StreamConfig::StreamDataFormat format) override;
+
 protected:
-    virtual void ReceivePacketsLoop(const ThreadData args) override;
-    virtual void TransmitPacketsLoop(const ThreadData args) override;
+    void ReceivePacketsLoop(const ThreadData args) override;
+    void TransmitPacketsLoop(const ThreadData args) override;
 
-    virtual int ReceiveData(char* buffer, uint32_t length, double timeout);
-    virtual void AbortReading();
+    int ReceiveData(char* buffer, uint32_t length, double timeout);
+    void AbortReading();
 
-    virtual int SendData(const char* buffer, uint32_t length, double timeout);
-    virtual void AbortSending();
-
-    int ConfigureFPGA_PLL(unsigned int pllIndex, const double interfaceClk_Hz, const double phaseShift_deg);
+    int SendData(const char* buffer, uint32_t length, double timeout);
+    void AbortSending();
 private:
     eConnectionType GetType(void)
     {
@@ -75,26 +78,11 @@ private:
 #endif
     std::string writeStreamPort;
     std::string readStreamPort;
+    unsigned endpointIndex;
+    static std::mutex control_mutex;
 };
 
 
 
-class ConnectionXillybusEntry : public ConnectionRegistryEntry
-{
-public:
-    ConnectionXillybusEntry(void);
-
-    ~ConnectionXillybusEntry(void);
-
-    std::vector<ConnectionHandle> enumerate(const ConnectionHandle &hint);
-
-    IConnection *make(const ConnectionHandle &handle);
-
-private:
-    #ifndef __unix__
-    std::string DeviceName(unsigned int index);
-    #else
-    #endif
-};
 
 }

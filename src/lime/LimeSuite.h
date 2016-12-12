@@ -1545,6 +1545,10 @@ API_EXPORT int CALL_CONV LMS_ResetLMSMCU(lms_device_t *device);
 
 /** @} (End FN_VERSION) */
 
+API_EXPORT int CALL_CONV LMS_SetActiveChipID(lms_device_t *device, unsigned id);
+
+API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqRxMHz, double *freqTxMHz);
+
 /**
  * @defgroup FN_ERRORS    Error reporting
  *

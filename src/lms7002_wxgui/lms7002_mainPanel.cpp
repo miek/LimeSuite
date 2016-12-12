@@ -339,3 +339,18 @@ void lms7002_mainPanel::OnEnableMIMOchecked(wxCommandEvent& event)
     LMS_WriteParam(lmsControl, LMS7param(MAC), chBck);
     UpdateVisiblePanel();
 }
+
+unsigned lms7002_mainPanel::GetLmsSelection()
+{
+    return cmbLmsDevice->GetSelection();
+}
+
+void lms7002_mainPanel::OnLmsDeviceSelect( wxCommandEvent& event )
+{
+    int deviceSelection = cmbLmsDevice->GetSelection();
+    LMS_SetActiveChipID(lmsControl,deviceSelection);
+    UpdateVisiblePanel();
+    wxCommandEvent evt;
+    evt.SetEventType(LMS_CHANGED);
+    wxPostEvent(this->GetParent(), evt);
+}
