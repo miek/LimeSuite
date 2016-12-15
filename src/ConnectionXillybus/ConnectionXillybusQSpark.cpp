@@ -814,9 +814,9 @@ void ConnectionXillybusQSpark::ReceivePacketsLoop(const ThreadData args)
             double dataRate = 1000.0*totalBytesReceived / timePeriod;
             //each channel sample rate
             float samplingRate = 1000.0*samplesReceived[0] / timePeriod;
-//#ifndef NDEBUG
+#ifndef NDEBUG
             printf("Rx: %.3f MB/s, Fs: %.3f MHz, overrun: %i, loss: %i \n", dataRate / 1000000.0, samplingRate / 1000000.0, droppedSamples, packetLoss);
-//#endif
+#endif
             samplesReceived[0] = 0;
             totalBytesReceived = 0;
             m_bufferFailures = 0;
@@ -937,9 +937,9 @@ void ConnectionXillybusQSpark::TransmitPacketsLoop(const ThreadData args)
             samplesSent = 0;
             totalBytesSent = 0;
             t1 = t2;
-//#ifndef NDEBUG
+#ifndef NDEBUG
             printf("Tx: %.3f MB/s, Fs: %.3f MHz, failures: %i, ts:%li\n", dataRate / 1000000.0, sampleRate / 1000000.0, m_bufferFailures, timestamp);
-//#endif
+#endif
         }
     }
 
@@ -1141,6 +1141,11 @@ int ConnectionXillybusQSpark::UploadWFM(const void* const* samples, uint8_t chCo
             break;
     }
     delete[] batch;
+#ifndef __unix__
+    Sleep(1000);
+#else
+    sleep(1);
+#endif
     AbortSending();
     if(cnt == 0)
         return 0;

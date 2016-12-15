@@ -73,6 +73,7 @@ private:
     int hWriteStream;
     int hReadStream;
 #endif
+
     std::string writeStreamPort;
     std::string readStreamPort;
 };

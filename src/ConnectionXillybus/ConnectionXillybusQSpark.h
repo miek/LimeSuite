@@ -44,7 +44,6 @@ public:
 	int UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate) override;
         int UpdateThreads() override;
         int UploadWFM(const void* const* samples, uint8_t chCount, size_t sample_count, StreamConfig::StreamDataFormat format) override;
-
 protected:
     void ReceivePacketsLoop(const ThreadData args) override;
     void TransmitPacketsLoop(const ThreadData args) override;

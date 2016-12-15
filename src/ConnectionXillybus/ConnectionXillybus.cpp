@@ -489,30 +489,30 @@ int ConnectionXillybus::SendData(const char *buffer, uint32_t length, double tim
     while (std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() < timeout_ms)
     {
 #ifndef __unix__
-		DWORD bytesSent = 0;
-		OVERLAPPED	vOverlapped;
-		memset(&vOverlapped, 0, sizeof(OVERLAPPED));
-		vOverlapped.hEvent = CreateEvent(NULL, false, false, NULL);
-		WriteFile(hWriteStream, buffer + totalBytesWritten, bytesToWrite, &bytesSent, &vOverlapped);
-		if (::GetLastError() != ERROR_IO_PENDING)
-		{
-			CloseHandle(vOverlapped.hEvent);
-			return totalBytesWritten;
-		}
-		DWORD dwRet = WaitForSingleObject(vOverlapped.hEvent, timeout_ms);
-		if (dwRet == WAIT_OBJECT_0)
-		{
-			if (GetOverlappedResult(hWriteStream, &vOverlapped, &bytesSent, TRUE) == FALSE)
-			{
-				bytesSent = 0;
-			}
-		}
-		else
-		{
-			CancelIo(hWriteStream);
-			bytesSent = 0;
-		}
-		CloseHandle(vOverlapped.hEvent);
+        DWORD bytesSent = 0;
+        OVERLAPPED	vOverlapped;
+        memset(&vOverlapped, 0, sizeof(OVERLAPPED));
+        vOverlapped.hEvent = CreateEvent(NULL, false, false, NULL);
+        WriteFile(hWriteStream, buffer + totalBytesWritten, bytesToWrite, &bytesSent, &vOverlapped);
+        if (::GetLastError() != ERROR_IO_PENDING)
+        {
+                CloseHandle(vOverlapped.hEvent);
+                return totalBytesWritten;
+        }
+        DWORD dwRet = WaitForSingleObject(vOverlapped.hEvent, timeout_ms);
+        if (dwRet == WAIT_OBJECT_0)
+        {
+                if (GetOverlappedResult(hWriteStream, &vOverlapped, &bytesSent, TRUE) == FALSE)
+                {
+                        bytesSent = 0;
+                }
+        }
+        else
+        {
+                CancelIo(hWriteStream);
+                bytesSent = 0;
+        }
+        CloseHandle(vOverlapped.hEvent);
 #else
 		int bytesSent = 0;
         if ((bytesSent  = write(hWriteStream, buffer+ totalBytesWritten, bytesToWrite))<0)

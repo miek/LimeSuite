@@ -105,7 +105,7 @@ class mainPanel : public wxPanel
 		wxCheckBox* chkEnableMIMO;
 		wxButton* btnReadTemperature;
 		wxNotebook* tabsNotebook;
-        wxChoice* cmbLmsDevice;
+                wxChoice* cmbLmsDevice;
 
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnNewProject( wxCommandEvent& event ) { event.Skip(); }
