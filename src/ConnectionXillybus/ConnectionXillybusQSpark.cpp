@@ -81,8 +81,8 @@ ConnectionXillybusQSpark::ConnectionXillybusQSpark(ConnectionXillybusQSpark &obj
     TxLoopFunction = bind(&ConnectionXillybusQSpark::TransmitPacketsLoop, this, std::placeholders::_1);
     m_hardwareName = obj.m_hardwareName;
     isConnected = obj.isConnected;
-    hWrite = obj.hWrite;
-    hRead = obj.hRead;
+    hWrite = -1;
+    hRead = -1;
     
     endpointIndex = 1;
     writeStreamPort = "/dev/xillybus_stream1_write_32";
@@ -110,48 +110,14 @@ ConnectionXillybusQSpark::~ConnectionXillybusQSpark()
 int ConnectionXillybusQSpark::Open(const unsigned index)
 {
     Close();
-
-    string writePort;
-    string readPort;
-
- #ifndef __unix__
-        writePort = "\\\\.\\xillybus_control0_write_32";
-        readPort = "\\\\.\\xillybus_control0_read_32";
+#ifndef __unix__
         writeStreamPort = "\\\\.\\xillybus_stream0_write_32";
         readStreamPort = "\\\\.\\xillybus_stream0_read_32";
 #else
-        writePort = "/dev/xillybus_control0_write_32";
-        readPort = "/dev/xillybus_control0_read_32";
         writeStreamPort = "/dev/xillybus_stream0_write_32";
         readStreamPort = "/dev/xillybus_stream0_read_32";
 #endif
-
-#ifndef __unix__
-	hWrite = CreateFileA(writePort.c_str(), GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0);
-	hRead = CreateFileA(readPort.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0);
-
-	// Check the results
-	if (hWrite == INVALID_HANDLE_VALUE || hRead == INVALID_HANDLE_VALUE)
-	{
-		CloseHandle(hWrite);
-        CloseHandle(hRead);
-		hWrite = INVALID_HANDLE_VALUE;
-        hRead = INVALID_HANDLE_VALUE;
-		return -1;
-	}
-#else
-    hWrite = open(writePort.c_str(), O_WRONLY | O_NOCTTY | O_NONBLOCK);
-    hRead = open(readPort.c_str(), O_RDONLY | O_NOCTTY | O_NONBLOCK);
-    if (hWrite == -1 || hRead == -1)
-	{
-            close(hWrite);
-            close(hRead);
-            hWrite = -1;
-            hRead = -1;
-            ReportError(errno);
-            return -1;
-	}
-#endif
+    isConnected = true;
     return 0;
 }
 
@@ -193,14 +159,62 @@ void ConnectionXillybusQSpark::Close()
 */
 bool ConnectionXillybusQSpark::IsOpen()
 {
+    return isConnected;
+}
+
+int ConnectionXillybusQSpark::TransferPacket(GenericPacket &pkt)
+{     
+    control_mutex.lock();
+    int timeout_cnt = 100;
+    int status = -1;
 #ifndef __unix__
-    if (hWrite != INVALID_HANDLE_VALUE && hRead != INVALID_HANDLE_VALUE )
-            return true;
+    const char writePort[] = "\\\\.\\xillybus_control0_write_32";
+    const char readPort[] = "\\\\.\\xillybus_control0_read_32";
+    while (--timeout_cnt)
+    {  
+        if ((hWrite = CreateFileA(writePort.c_str(), GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0))!=INVALID_HANDLE_VALUE)
+            break;
+        Sleep(1);  
+    }
+    while (timeout_cnt--)
+    {  
+        if ((hRead = CreateFileA(readPort.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0))!=INVALID_HANDLE_VALUE)
+            break;
+        Sleep(1); 
+    }
+
+    if (hWrite != INVALID_HANDLE_VALUE && hRead != INVALID_HANDLE_VALUE)
+        status = LMS64CProtocol::TransferPacket(pkt);
+    else
+        ReportError("Unable to access control port");  
+        
+    CloseHandle(hWrite);
+    CloseHandle(hRead);
 #else
-    if( hWrite != -1 && hRead != -1 )
-        return true;
+    const char writePort[] = "/dev/xillybus_control0_write_32";
+    const char readPort[] = "/dev/xillybus_control0_read_32";
+    while (--timeout_cnt)
+    {
+       if ((hWrite = open(writePort, O_WRONLY | O_NOCTTY | O_NONBLOCK))!=-1)
+           break;
+       usleep(1000);
+    }
+    while (timeout_cnt--)
+    {
+       if ((hRead = open(readPort, O_RDONLY | O_NOCTTY | O_NONBLOCK))!=-1)
+           break;
+       usleep(1000);
+    }
+
+    if (hWrite == -1 || hRead ==-1)
+        ReportError(errno);   
+    else
+        status = LMS64CProtocol::TransferPacket(pkt);
+    close(hWrite);
+    close(hRead);
 #endif
-    return false;
+    control_mutex.unlock();
+    return status;
 }
 
 /**	@brief Sends given data buffer to chip through USB port.
@@ -220,8 +234,7 @@ int ConnectionXillybusQSpark::Write(const unsigned char *buffer, const int lengt
 	if (hWrite == -1)
 #endif
         return -1;
-    
-    control_mutex.lock();
+
     auto t1 = chrono::high_resolution_clock::now();
     auto t2 = chrono::high_resolution_clock::now();
     while (std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() < 500)
@@ -312,7 +325,6 @@ int ConnectionXillybusQSpark::Read(unsigned char *buffer, const int length, int 
 	if (hRead == -1)
 #endif
         {
-            control_mutex.unlock();
             return -1;
         }
 
@@ -372,7 +384,6 @@ int ConnectionXillybusQSpark::Read(unsigned char *buffer, const int length, int 
             else
                break;
         }
-    control_mutex.unlock();
     return totalBytesReaded;
 }
 

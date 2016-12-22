@@ -2013,7 +2013,7 @@ int LMS7_Device::RegisterTest()
 {
     for (unsigned i = 0; i < lms_list.size(); i++)
     {
-        if (lms_list[i].RegistersTest() != 0);
+        if (lms_list[i].RegistersTest() != 0)
             return -1;
     }
     return 0;
