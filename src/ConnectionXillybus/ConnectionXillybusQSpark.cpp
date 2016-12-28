@@ -38,7 +38,15 @@ ConnectionXillybusQSpark::ConnectionXillybusQSpark(const unsigned index)
     TxLoopFunction = bind(&ConnectionXillybusQSpark::TransmitPacketsLoop, this, std::placeholders::_1);
     m_hardwareName = "";
     isConnected = false;
-    endpointIndex = 0;
+    
+    endpointIndex = 0;    
+#ifndef __unix__
+    writeStreamPort = "\\\\.\\xillybus_stream0_write_32";
+    readStreamPort = "\\\\.\\xillybus_stream0_read_32";
+#else
+    writeStreamPort = "/dev/xillybus_stream0_write_32";
+    readStreamPort = "/dev/xillybus_stream0_read_32";
+#endif
     
 #ifndef __unix__
     hWrite = INVALID_HANDLE_VALUE;
@@ -85,8 +93,13 @@ ConnectionXillybusQSpark::ConnectionXillybusQSpark(ConnectionXillybusQSpark &obj
     hRead = -1;
     
     endpointIndex = 1;
+#ifndef __unix__
+    writeStreamPort = "\\\\.\\xillybus_stream1_write_32";
+    readStreamPort = "\\\\.\\xillybus_stream1_read_32";
+#else
     writeStreamPort = "/dev/xillybus_stream1_write_32";
     readStreamPort = "/dev/xillybus_stream1_read_32";
+#endif
 
 #ifndef __unix__
     hWriteStream = INVALID_HANDLE_VALUE;
@@ -110,13 +123,6 @@ ConnectionXillybusQSpark::~ConnectionXillybusQSpark()
 int ConnectionXillybusQSpark::Open(const unsigned index)
 {
     Close();
-#ifndef __unix__
-        writeStreamPort = "\\\\.\\xillybus_stream0_write_32";
-        readStreamPort = "\\\\.\\xillybus_stream0_read_32";
-#else
-        writeStreamPort = "/dev/xillybus_stream0_write_32";
-        readStreamPort = "/dev/xillybus_stream0_read_32";
-#endif
     isConnected = true;
     return 0;
 }
@@ -139,12 +145,14 @@ void ConnectionXillybusQSpark::Close()
 	if (hReadStream != INVALID_HANDLE_VALUE)
 		CloseHandle(hReadStream);
 #else
+    control_mutex.lock();
     if( hWrite >= 0)
         close(hWrite);
     hWrite = -1;
     if( hRead >= 0)
         close(hRead);
     hRead = -1;
+    control_mutex.unlock();
     if( hWriteStream >= 0)
         close(hWriteStream);
     hWriteStream = -1;
@@ -164,9 +172,9 @@ bool ConnectionXillybusQSpark::IsOpen()
 
 int ConnectionXillybusQSpark::TransferPacket(GenericPacket &pkt)
 {     
-    control_mutex.lock();
     int timeout_cnt = 100;
     int status = -1;
+    control_mutex.lock();
 #ifndef __unix__
     const char writePort[] = "\\\\.\\xillybus_control0_write_32";
     const char readPort[] = "\\\\.\\xillybus_control0_read_32";
@@ -210,8 +218,8 @@ int ConnectionXillybusQSpark::TransferPacket(GenericPacket &pkt)
         ReportError(errno);   
     else
         status = LMS64CProtocol::TransferPacket(pkt);
-    close(hWrite);
     close(hRead);
+    close(hWrite);
 #endif
     control_mutex.unlock();
     return status;
@@ -376,6 +384,7 @@ int ConnectionXillybusQSpark::Read(unsigned char *buffer, const int length, int 
             else
 #endif
             totalBytesReaded += bytesReceived;
+            
             if (totalBytesReaded < length)
             {
                     bytesToRead -= bytesReceived;
@@ -1189,4 +1198,11 @@ int ConnectionXillybusQSpark::ReadRawBuffer(char* buffer, unsigned length)
     AbortReading();
     //fpga::StopStreaming(this);
     return ret;
+}
+
+DeviceInfo ConnectionXillybusQSpark::GetDeviceInfo(void)
+{
+    DeviceInfo info = LMS64CProtocol::GetDeviceInfo();
+    info.addrsLMS7002M.push_back(info.addrsLMS7002M[0]+1);
+    return info;
 }

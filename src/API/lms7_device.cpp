@@ -1984,12 +1984,7 @@ int LMS7_Device::GetChipTemperature(size_t ind, float_type *temp)
 
 int LMS7_Device::LoadConfig(const char *filename)
 {
-    for (unsigned i = 0; i < lms_list.size(); i++)
-    {
-        if (lms_list[i].LoadConfig(filename) != 0)
-            return -1;
-    }
-    return 0;
+    return lms_list[this->lms_chip_id].LoadConfig(filename);
 }
 
 int LMS7_Device::SaveConfig(const char *filename)

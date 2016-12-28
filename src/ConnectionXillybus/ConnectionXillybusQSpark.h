@@ -47,6 +47,7 @@ public:
         int ReadRawBuffer(char* buffer, unsigned length) override;
         int UpdateThreads() override;
         int UploadWFM(const void* const* samples, uint8_t chCount, size_t sample_count, StreamConfig::StreamDataFormat format) override;
+        DeviceInfo GetDeviceInfo(void)override;
 protected:
     void ReceivePacketsLoop(const ThreadData args) override;
     void TransmitPacketsLoop(const ThreadData args) override;
