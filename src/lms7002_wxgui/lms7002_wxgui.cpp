@@ -3490,6 +3490,28 @@ pnlCLKGEN_view::pnlCLKGEN_view( wxWindow* parent, wxWindowID id, const wxPoint& 
 	
 	sbSizer70->Add( fgSizer89, 0, wxALIGN_CENTER_VERTICAL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
 	
+	wxBoxSizer* bSizer11;
+	bSizer11 = new wxBoxSizer( wxHORIZONTAL );
+	
+	ID_STATICTEXT101 = new wxStaticText( sbSizer70->GetStaticBox(), wxID_ANY, wxT("Rx phase"), wxDefaultPosition, wxDefaultSize, 0 );
+	ID_STATICTEXT101->Wrap( -1 );
+	bSizer11->Add( ID_STATICTEXT101, 0, wxALL, 5 );
+	
+	rxPhase = new wxTextCtrl( sbSizer70->GetStaticBox(), wxID_ANY, wxT("125"), wxDefaultPosition, wxSize( 48,-1 ), 0 );
+	rxPhase->SetMaxLength( 0 ); 
+	bSizer11->Add( rxPhase, 0, wxALL, 5 );
+	
+	ID_STATICTEXT102 = new wxStaticText( sbSizer70->GetStaticBox(), wxID_ANY, wxT("Tx phase"), wxDefaultPosition, wxDefaultSize, 0 );
+	ID_STATICTEXT102->Wrap( -1 );
+	bSizer11->Add( ID_STATICTEXT102, 0, wxALL, 5 );
+	
+	txtPhase = new wxTextCtrl( sbSizer70->GetStaticBox(), wxID_ANY, wxT("125"), wxDefaultPosition, wxSize( 48,-1 ), 0 );
+	txtPhase->SetMaxLength( 0 ); 
+	bSizer11->Add( txtPhase, 0, wxALL, 5 );
+	
+	
+	sbSizer70->Add( bSizer11, 1, wxEXPAND, 5 );
+	
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxHORIZONTAL );
 	

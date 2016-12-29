@@ -154,8 +154,12 @@ void lms7002_pnlCLKGEN_view::ParameterChangeHandler(wxCommandEvent& event)
 void lms7002_pnlCLKGEN_view::onbtnCalculateClick( wxCommandEvent& event )
 {
     double freqMHz;
+    double phaseTx;
+    double phaseRx;
     txtFrequency->GetValue().ToDouble(&freqMHz);
-    int status = LMS_SetClockFreq(lmsControl,LMS_CLOCK_CGEN,freqMHz * 1e6);
+    txtPhase->GetValue().ToDouble(&phaseTx);
+    rxPhase->GetValue().ToDouble(&phaseRx);
+    int status = LMS_SetClockFreq(lmsControl, LMS_CLOCK_CGEN, freqMHz * 1e6, phaseTx, phaseRx);
     if (status != 0)
         wxMessageBox(wxString::Format(_("%s"), wxString::From8BitData(LMS_GetLastErrorMessage())));
     float_type freq;
@@ -173,7 +177,11 @@ void lms7002_pnlCLKGEN_view::onbtnCalculateClick( wxCommandEvent& event )
 
 void lms7002_pnlCLKGEN_view::onbtnTuneClick( wxCommandEvent& event )
 {
-    int status = LMS_SetClockFreq(lmsControl,LMS_CLOCK_CGEN,-1); //tune CGEN
+    double phaseTx;
+    double phaseRx;
+    txtPhase->GetValue().ToDouble(&phaseTx);
+    rxPhase->GetValue().ToDouble(&phaseRx);
+    int status = LMS_SetClockFreq(lmsControl, LMS_CLOCK_CGEN, -1, phaseTx, phaseRx); //tune CGEN
     if (status != 0)
         wxMessageBox(wxString::Format(_("CLKGEN Tune: %s"), wxString::From8BitData(LMS_GetLastErrorMessage())));
     uint16_t value;

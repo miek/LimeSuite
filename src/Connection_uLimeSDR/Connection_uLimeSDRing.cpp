@@ -22,7 +22,7 @@ using namespace std;
 
 /** @brief Configures FPGA PLLs to LimeLight interface frequency
 */
-int Connection_uLimeSDR::UpdateExternalDataRate(const size_t channel, const double txRate_Hz, const double rxRate_Hz)
+int Connection_uLimeSDR::UpdateExternalDataRate(const size_t channel, const double txRate_Hz, const double rxRate_Hz, const double txphase, const double rxphase)
 {
     std::cout << "Connection_uLimeSDR::UpdateExternalDataRate(tx=" << txRate_Hz / 1e6 << "MHz, rx=" << rxRate_Hz / 1e6 << "MHz)" << std::endl;
     const float txInterfaceClk = 2 * txRate_Hz;

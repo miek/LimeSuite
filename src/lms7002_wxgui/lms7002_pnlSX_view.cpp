@@ -474,8 +474,8 @@ void lms7002_pnlSX_view::OnbtnChangeRefClkClick( wxCommandEvent& event )
         {
             double currentFreq_MHz;
             txtFrequency->GetValue().ToDouble(&currentFreq_MHz);
-            LMS_SetClockFreq(lmsControl,LMS_CLOCK_REF,refClkMHz * 1e6);
-            int status = LMS_SetClockFreq(lmsControl, isTx ? LMS_CLOCK_SXT : LMS_CLOCK_SXR,currentFreq_MHz * 1e6);
+            LMS_SetClockFreq(lmsControl,LMS_CLOCK_REF,refClkMHz * 1e6,90,90);
+            int status = LMS_SetClockFreq(lmsControl, isTx ? LMS_CLOCK_SXT : LMS_CLOCK_SXR,currentFreq_MHz * 1e6,90,90);
             if (status != 0)
                 wxMessageBox(wxString::Format(_("%s"), wxString::From8BitData(LMS_GetLastErrorMessage())));
             UpdateGUI();
@@ -493,8 +493,8 @@ void lms7002_pnlSX_view::OnbtnCalculateClick( wxCommandEvent& event )
     const auto isTx = (ch == 2)? true : false;
     double RefClkMHz;
     lblRefClk_MHz->GetLabel().ToDouble(&RefClkMHz);
-    LMS_SetClockFreq(lmsControl,LMS_CLOCK_REF,RefClkMHz * 1e6);
-    int status = LMS_SetClockFreq(lmsControl, isTx ? LMS_CLOCK_SXT : LMS_CLOCK_SXR,freqMHz * 1e6);
+    LMS_SetClockFreq(lmsControl,LMS_CLOCK_REF,RefClkMHz * 1e6,90,90);
+    int status = LMS_SetClockFreq(lmsControl, isTx ? LMS_CLOCK_SXT : LMS_CLOCK_SXR,freqMHz * 1e6,90,90);
     if (status != 0)
         wxMessageBox(wxString::Format(_("%s"), wxString::From8BitData(LMS_GetLastErrorMessage())));
     else
@@ -518,7 +518,7 @@ void lms7002_pnlSX_view::OnbtnTuneClick( wxCommandEvent& event )
     assert(lmsControl != nullptr);
     uint16_t ch;
     LMS_ReadParam(lmsControl,LMS7param(MAC),&ch);
-    int status = LMS_SetClockFreq(lmsControl,ch == 2 ? LMS_CLOCK_SXT : LMS_CLOCK_SXR,-1); //Tune
+    int status = LMS_SetClockFreq(lmsControl,ch == 2 ? LMS_CLOCK_SXT : LMS_CLOCK_SXR,-1,90,90); //Tune
     if (status != 0)
         wxMessageBox(wxString::Format(_("%s"), wxString::From8BitData(LMS_GetLastErrorMessage())));
     UpdateGUI();

@@ -485,7 +485,7 @@ API_EXPORT int CALL_CONV LMS_GetClockFreq(lms_device_t *device, size_t clk_id, f
     }
 }
 
-API_EXPORT int CALL_CONV LMS_SetClockFreq(lms_device_t *device, size_t clk_id, float_type freq)
+API_EXPORT int CALL_CONV LMS_SetClockFreq(lms_device_t *device, size_t clk_id, float_type freq, const double txPhase, const double rxPhase)
 {
     if (device == nullptr)
     {
@@ -534,7 +534,7 @@ API_EXPORT int CALL_CONV LMS_SetClockFreq(lms_device_t *device, size_t clk_id, f
                 lime::ReportError(EINVAL, "Device not connected");
                 return -1;
             }
-            return conn->UpdateExternalDataRate(0,fpgaTxPLL/2,fpgaRxPLL/2);
+            return conn->UpdateExternalDataRate(0, fpgaTxPLL / 2, fpgaRxPLL / 2, txPhase, rxPhase);
         }
         case LMS_CLOCK_RXTSP:
                 lime::ReportError(ENOTSUP, "Setting TSP clocks is not supported.");

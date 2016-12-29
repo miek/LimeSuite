@@ -109,7 +109,7 @@ void IConnection::UpdateExternalBandSelect(const size_t channel, const int trfBa
     return;
 }
 
-int IConnection::UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate)
+int IConnection::UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate, const double txPhase, const double rxPhase)
 {
     return ReportError(EPERM, "UpdateExternalDataRate not implemented");
 }

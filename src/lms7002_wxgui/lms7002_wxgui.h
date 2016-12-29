@@ -1047,6 +1047,8 @@ class pnlCLKGEN_view : public wxPanel
 		wxTextCtrl* txtFrequency;
 		wxComboBox* cmbCLKH_OV_CLKL_CGEN;
 		wxTextCtrl* txtFrequencyCLKL;
+		wxStaticText* ID_STATICTEXT101;
+		wxStaticText* ID_STATICTEXT102;
 		wxButton* btnCalculate;
 		wxButton* btnTune;
 		wxStaticText* ID_STATICTEXT7;
@@ -1091,6 +1093,8 @@ class pnlCLKGEN_view : public wxPanel
 		
 	
 	public:
+		wxTextCtrl* rxPhase;
+		wxTextCtrl* txtPhase;
 		
 		pnlCLKGEN_view( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxTAB_TRAVERSAL ); 
 		~pnlCLKGEN_view();

@@ -39,7 +39,7 @@ public:
 	int Read(unsigned char *buffer, int length, int timeout_ms = 100) override;
 
 	//hooks to update FPGA plls when baseband interface data rate is changed
-	int UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate) override;
+    int UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate, const double txphase, const double rxphase) override;
 protected:
     virtual void ReceivePacketsLoop(const ThreadData args) override;
     virtual void TransmitPacketsLoop(const ThreadData args) override;

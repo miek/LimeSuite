@@ -70,7 +70,7 @@ int ConnectionSTREAM::UploadWFM(const void* const* samples, uint8_t chCount, siz
 
 /** @brief Configures FPGA PLLs to LimeLight interface frequency
 */
-int ConnectionSTREAM::UpdateExternalDataRate(const size_t channel, const double txRate_Hz, const double rxRate_Hz)
+int ConnectionSTREAM::UpdateExternalDataRate(const size_t channel, const double txRate_Hz, const double rxRate_Hz, const double txphase, const double rxphase)
 {
     std::cout << "ConnectionSTREAM::ConfigureFPGA_PLL(tx=" << txRate_Hz/1e6 << "MHz, rx=" << rxRate_Hz/1e6 << "MHz)" << std::endl;
     const float txInterfaceClk = 2 * txRate_Hz;
@@ -87,7 +87,7 @@ int ConnectionSTREAM::UpdateExternalDataRate(const size_t channel, const double 
         clocks[1].bypass = false;
         clocks[1].index = 1;
         clocks[1].outFrequency = txInterfaceClk;
-        clocks[1].phaseShift_deg = 90;
+        clocks[1].phaseShift_deg = txphase;
         status = lime::fpga::SetPllFrequency(this, 0, txInterfaceClk, clocks, 2);
     }
     else
@@ -105,7 +105,7 @@ int ConnectionSTREAM::UpdateExternalDataRate(const size_t channel, const double 
         clocks[1].bypass = false;
         clocks[1].index = 1;
         clocks[1].outFrequency = rxInterfaceClk;
-        clocks[1].phaseShift_deg = 90;
+        clocks[1].phaseShift_deg = rxphase;
         status = lime::fpga::SetPllFrequency(this, 1, rxInterfaceClk, clocks, 2);
     }
     else

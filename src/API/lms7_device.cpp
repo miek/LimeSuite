@@ -352,7 +352,7 @@ int LMS7_Device::SetRate(float_type f_Hz, int oversample)
         }
     }
 
-    return this->streamPort->UpdateExternalDataRate(0,fpgaTxPLL/2,fpgaRxPLL/2);
+    return this->streamPort->UpdateExternalDataRate(0,fpgaTxPLL/2,fpgaRxPLL/2,90,90);
 }
 
 int LMS7_Device::SetRate(bool tx, float_type f_Hz, size_t oversample)

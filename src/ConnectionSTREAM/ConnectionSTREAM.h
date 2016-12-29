@@ -104,7 +104,7 @@ public:
     virtual int UploadWFM(const void* const* samples, uint8_t chCount, size_t sample_count, StreamConfig::StreamDataFormat format) override;
 
     //hooks to update FPGA plls when baseband interface data rate is changed
-    virtual int UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate) override;
+    virtual int UpdateExternalDataRate(const size_t channel, const double txRate, const double rxRate, const double txphase, const double rxphase) override;
     virtual int ProgramWrite(const char *buffer, const size_t length, const int programmingMode, const int device, ProgrammingCallback callback) override;
 protected:
     virtual void ReceivePacketsLoop(const ThreadData args) override;

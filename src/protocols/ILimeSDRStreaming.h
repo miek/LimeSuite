@@ -57,7 +57,7 @@ public:
     virtual int WriteStream(const size_t streamID, const void* buffs, const size_t length, const long timeout_ms, const StreamMetadata& metadata);
     virtual int ReadStreamStatus(const size_t streamID, const long timeout_ms, StreamMetadata& metadata);
 
-    virtual int UpdateExternalDataRate(const size_t channel, const double txRate_Hz, const double rxRate_Hz) = 0;
+    virtual int UpdateExternalDataRate(const size_t channel, const double txRate_Hz, const double rxRate_Hz, const double txphase, const double rxphase) = 0;
     virtual void EnterSelfCalibration(const size_t channel);
     virtual void ExitSelfCalibration(const size_t channel);
     virtual uint64_t GetHardwareTimestamp(void);

@@ -35,6 +35,7 @@
 #include <sstream>
 #include <pnlQSpark.h>
 #include "lms7_device.h"
+#include "lms7002_pnlCLKGEN_view.h"
 
 using namespace std;
 using namespace lime;
@@ -51,7 +52,11 @@ void LMS7SuiteAppFrame::HandleLMSevent(wxCommandEvent& event)
     if (event.GetEventType() == CGEN_FREQUENCY_CHANGED)
     {
         LMS_GetClockFreq(lmsControl,LMS_CLOCK_CGEN,&freq);
-        int status = LMS_SetClockFreq(lmsControl,LMS_CLOCK_CGEN,freq);
+        double phaseTx, phaseRx;
+        mContent->mTabCGEN->txtPhase->GetValue().ToDouble(&phaseTx);
+        mContent->mTabCGEN->rxPhase->GetValue().ToDouble(&phaseRx);
+        printf("Phase: RX: %f; TX: %f", phaseRx, phaseTx);
+        int status = LMS_SetClockFreq(lmsControl, LMS_CLOCK_CGEN, freq, phaseTx, phaseRx);
         if (status == 0)
         {
             wxCommandEvent evt;
