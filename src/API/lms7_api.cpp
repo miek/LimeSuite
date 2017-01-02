@@ -1656,8 +1656,32 @@ API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqR
 
     if (lime::fpga::SetPllFrequency(lms->GetConnection(), 4, 30.72e6, clocks, 2) != 0)
         return -1;
+    lms->extra_parameters["ADC_MHz"] = clocks[0].rd_actualFrequency;
+    lms->extra_parameters["DAC_MHz"] = clocks[1].rd_actualFrequency;
     *freqTxMHz = clocks[1].rd_actualFrequency;
     *freqRxMHz = clocks[0].rd_actualFrequency;
+}
+
+API_EXPORT int CALL_CONV LMS_GetExtraParam(lms_device_t *device, const char* name, double* value)
+{
+    if (device == nullptr)
+    {
+        lime::ReportError(EINVAL, "Device cannot be NULL.");
+        return -1;
+    }
+
+    LMS7_Device* lms = (LMS7_Device*)device;
+    try
+    {
+        *value = lms->extra_parameters.at(std::string(name));
+    }
+    catch(...)
+    {
+        lime::ReportError(EINVAL, "Invalid parameter");
+        return -1;
+    }
+    
+    return 0;
 }
 
 

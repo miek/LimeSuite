@@ -7,7 +7,7 @@
 DPDTest::DPDTest( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 , lmsControl(nullptr)
 {
-    mNyquist_MHz = 1;
+    mLmsNyquist_MHz = 1;
     this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) );
 #ifndef __unix__
@@ -59,7 +59,7 @@ DPDTest::DPDTest( wxWindow* parent, wxWindowID id, const wxString& title, const 
         plots[i]->settings.titleXaxis = "Frequency(MHz)";
         plots[i]->settings.titleYaxis = "Amplitude(dBFS)";
         plots[i]->settings.xUnits = "";
-        plots[i]->settings.gridXprec = 3;
+        plots[i]->settings.gridXprec = 2;
         plots[i]->settings.markersEnabled = true;
 
         plots[i]->settings.marginLeft = 40;
@@ -83,7 +83,7 @@ DPDTest::DPDTest( wxWindow* parent, wxWindowID id, const wxString& title, const 
         plotst[i]->settings.titleXaxis = "";
         plotst[i]->settings.titleYaxis = "";
         plotst[i]->settings.xUnits = "";
-        plotst[i]->settings.gridXprec = 3;
+        plotst[i]->settings.gridXprec = 2;
         plotst[i]->settings.markersEnabled = true;
 
         plotst[i]->settings.marginLeft = 40;
@@ -112,7 +112,7 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
         wxMessageBox("Not connected");
         return;
     }
-    const int bytesToRead = 12*4096;
+    const int bytesToRead = 12*8192;
     unsigned char *buffer = new unsigned char[bytesToRead];
     memset(buffer, 0, bytesToRead);
 
@@ -128,7 +128,6 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
         kiss_fft_cpx* x_samples = new kiss_fft_cpx[samplesReceived];
         kiss_fft_cpx* fftCalcOut = new kiss_fft_cpx[samplesReceived];
 
-        int index = 0;
         int16_t value; //temporary value for samples forming
         // deinterleave xp and yp samples
 /*
@@ -188,15 +187,20 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
 
         //calculate xp FFT
         kiss_fft(m_fftCalcPlan, xp_samples, fftCalcOut);
-        PlotFFT(mFFT_xp, fftCalcOut, samplesReceived, mNyquist_MHz);
+        PlotFFT(mFFT_xp, fftCalcOut, samplesReceived, mLmsNyquist_MHz);
 
         //calculate yp FFT
         kiss_fft(m_fftCalcPlan, yp_samples, fftCalcOut);
-        PlotFFT(mFFT_yp, fftCalcOut, samplesReceived, mNyquist_MHz);
+        PlotFFT(mFFT_yp, fftCalcOut, samplesReceived, mLmsNyquist_MHz);
 
         //calculate x FFT
         kiss_fft(m_fftCalcPlan, x_samples, fftCalcOut);
-        PlotFFT(mFFT_x, fftCalcOut, samplesReceived, mNyquist_MHz);
+        double ADCNyquistMHz;
+        if (LMS_GetExtraParam(lmsControl, "ADC_MHz", &ADCNyquistMHz)!=0)
+            ADCNyquistMHz = 1;
+        else
+            ADCNyquistMHz /= 2e6;
+        PlotFFT(mFFT_x, fftCalcOut, samplesReceived, ADCNyquistMHz);
 
         //free allocated memory
         kiss_fft_free(m_fftCalcPlan);
@@ -205,18 +209,21 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
         delete x_samples;
         delete fftCalcOut;
     }
+    else
+        printf("DPD received samples %d/%d", bytesReceived, bytesToRead);
     delete buffer;
 }
 
 
-void DPDTest::SetNyquist(float Nyquist_MHz)
+void DPDTest::SetNyquist(float LmsNyquistMHz)
 {
-    mNyquist_MHz = Nyquist_MHz;
-    OpenGLGraph* plots[] = { mFFT_xp, mFFT_yp, mFFT_x };
-    for (int i = 0; i < 3; ++i)
-    {   
-        plots[i]->SetInitialDisplayArea(-Nyquist_MHz*1000000, Nyquist_MHz*1000000, -100, 0);
-    }
+    mLmsNyquist_MHz = LmsNyquistMHz;
+    double ADCNyquistMHz;
+    if (LMS_GetExtraParam(lmsControl, "ADC_MHz", &ADCNyquistMHz)!=0)
+        ADCNyquistMHz = 1;
+    mFFT_xp->SetInitialDisplayArea(-LmsNyquistMHz*1000000, LmsNyquistMHz*1000000, -100, 0);
+    mFFT_yp->SetInitialDisplayArea(-LmsNyquistMHz*1000000, LmsNyquistMHz*1000000, -100, 0);
+    mFFT_x->SetInitialDisplayArea(-ADCNyquistMHz*1000000, ADCNyquistMHz*1000000, -100, 0);
 }
 
 /** @brief Normalizes the fft output and displays results in given graph

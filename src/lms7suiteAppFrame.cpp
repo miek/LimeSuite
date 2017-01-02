@@ -79,15 +79,21 @@ void LMS7SuiteAppFrame::HandleLMSevent(wxCommandEvent& event)
             evt.SetString(msg);
             wxPostEvent(this, evt);
         }
-
-        LMS_GetSampleRate(lmsControl,LMS_CH_RX,0,&freq,NULL);
+        
         if (fftviewer)
         {
-            
+            size_t channel = this->mContent->GetLmsSelection()*2;
+            if (channel >= LMS_GetNumChannels(lmsControl,LMS_CH_RX))
+                channel = LMS_GetNumChannels(lmsControl,LMS_CH_RX)-1;
+            LMS_GetSampleRate(lmsControl,LMS_CH_RX,channel,&freq,NULL);    
             fftviewer->SetNyquistFrequency(freq / 2);
         }
         if (DPDTestGui)
         {
+            if (LMS_GetNumChannels(lmsControl,LMS_CH_RX) > 2)
+                LMS_GetSampleRate(lmsControl,LMS_CH_RX,2,&freq,NULL);
+            else
+                LMS_GetSampleRate(lmsControl,LMS_CH_RX,0,&freq,NULL);
             DPDTestGui->SetNyquist(freq / 2);
         }
     }

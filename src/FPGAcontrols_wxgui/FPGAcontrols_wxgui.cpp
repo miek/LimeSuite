@@ -249,10 +249,8 @@ int FPGAcontrols_wxgui::UploadFile(const wxString &filename)
     btnPlayWFM->Enable(false);
     btnStopWFM->Enable(false);
 
-    uint8_t chCount = 1;
+    const uint8_t chCount = 2;
     bool MIMO = chkMIMO->IsChecked();
-    if (MIMO)
-        chCount = 2;
 
     lime::complex16_t* src[2];
     for(int i=0; i<chCount; ++i)

@@ -11,6 +11,8 @@
 #include "lime/LimeSuite.h"
 #include <mutex>
 #include <vector>
+#include <map>
+#include <string>
 #include <IConnection.h>
 
 class LIME_API LMS7_Device
@@ -100,6 +102,7 @@ public:
     int WriteParam(struct LMS7Parameter param, uint16_t val);
     int SetActiveChip(unsigned ind);
     static LMS7_Device* CreateDevice(lime::IConnection* conn);
+    std::map<std::string, double> extra_parameters;
 protected:
 
     lms_dev_info_t devInfo;

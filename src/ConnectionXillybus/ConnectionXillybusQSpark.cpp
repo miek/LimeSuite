@@ -89,14 +89,21 @@ ConnectionXillybusQSpark::ConnectionXillybusQSpark(ConnectionXillybusQSpark &obj
     TxLoopFunction = bind(&ConnectionXillybusQSpark::TransmitPacketsLoop, this, std::placeholders::_1);
     m_hardwareName = obj.m_hardwareName;
     isConnected = obj.isConnected;
-    hWrite = -1;
-    hRead = -1;
+
     
     endpointIndex = 1;
 #ifndef __unix__
+    hWrite = INVALID_HANDLE_VALUE;
+    hRead = INVALID_HANDLE_VALUE;
+    hWriteStream  = INVALID_HANDLE_VALUE;
+    hReadStream  = INVALID_HANDLE_VALUE;
     writeStreamPort = "\\\\.\\xillybus_stream1_write_32";
     readStreamPort = "\\\\.\\xillybus_stream1_read_32";
 #else
+    hWrite = -1;
+    hRead = -1;
+    hWriteStream = -1;
+    hReadStream = -1;
     writeStreamPort = "/dev/xillybus_stream1_write_32";
     readStreamPort = "/dev/xillybus_stream1_read_32";
 #endif
@@ -180,13 +187,13 @@ int ConnectionXillybusQSpark::TransferPacket(GenericPacket &pkt)
     const char readPort[] = "\\\\.\\xillybus_control0_read_32";
     while (--timeout_cnt)
     {  
-        if ((hWrite = CreateFileA(writePort.c_str(), GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0))!=INVALID_HANDLE_VALUE)
+        if ((hWrite = CreateFileA(writePort, GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0))!=INVALID_HANDLE_VALUE)
             break;
         Sleep(1);  
     }
     while (timeout_cnt--)
     {  
-        if ((hRead = CreateFileA(readPort.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0))!=INVALID_HANDLE_VALUE)
+        if ((hRead = CreateFileA(readPort, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0))!=INVALID_HANDLE_VALUE)
             break;
         Sleep(1); 
     }
@@ -1192,7 +1199,6 @@ int ConnectionXillybusQSpark::ReadRawBuffer(char* buffer, unsigned length)
     addrs.clear(); values.clear();
     addrs.push_back(0x0041); values.push_back(1);
     this->WriteRegisters(addrs.data(), values.data(), values.size());
-
     int ret = ReceiveData(buffer, length, 1000);
 
     AbortReading();

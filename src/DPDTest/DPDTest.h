@@ -45,13 +45,13 @@ protected:
     
     void OnbtnCaptureClicked(wxCommandEvent& event);
     lms_device_t *lmsControl;
-    float mNyquist_MHz;
+    float mLmsNyquist_MHz;
 
     void PlotFFT(OpenGLGraph* plot, const kiss_fft_cpx* fftOutput, const int samplesCount, const float nyquist_MHz);
     void PlotTimeDomain(OpenGLGraph* plot, const kiss_fft_cpx* samples, const int samplesCount);
 public:
     void Initialize(lms_device_t* dataPort);
-    void SetNyquist(float Nyquist_MHz);
+    void SetNyquist(float LmsNyquistMHz);
     DPDTest(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("FFT viewer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(-1, -1), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
     ~DPDTest();
 };

@@ -1551,6 +1551,8 @@ API_EXPORT int CALL_CONV LMS_ReadRawBuffer(lms_device_t *device, char* buffer, u
 
 API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqRxMHz, double *freqTxMHz);
 
+API_EXPORT int CALL_CONV LMS_GetExtraParam(lms_device_t *device, const char* name, double* value);
+
 /**
  * @defgroup FN_ERRORS    Error reporting
  *
