@@ -1754,9 +1754,9 @@ int LMS7_Device::ProgramFW(std::string fname, lms_target_t mode,lime::IConnectio
 
 int LMS7_Device::ProgramMCU(const char* data, size_t len, lms_target_t target,lime::IConnection::ProgrammingCallback callback)
 {
-    lime::MCU_BD mcu;
+    lime::MCU_BD *mcu = lms_list.at(lms_chip_id).GetMCUControls();
     lime::IConnection::MCU_PROG_MODE mode;
-    uint8_t bin[8192];
+    uint8_t bin[lime::MCU_BD::cMaxFWSize];
 
     if(data != nullptr)
     {
@@ -1780,10 +1780,10 @@ int LMS7_Device::ProgramMCU(const char* data, size_t len, lms_target_t target,li
         lime::ReportError(ENOTSUP, "Unsupported target storage type");
         return -1;
     }
-    mcu.Initialize(this->connection);
-    mcu.callback = callback;
-    mcu.Program_MCU(bin,mode);
-    mcu.callback = nullptr;
+
+    mcu->callback = callback;
+    mcu->Program_MCU(bin,mode);
+    mcu->callback = nullptr;
     return 0;
 }
 

@@ -80,6 +80,12 @@ public:
                     mHead = (mHead + dropElements) & (mBufferSize - 1);//advance to next one
                     mElementsFilled -= dropElements;
                 }
+
+                //there is no space, wait on CV to give pop_samples the thread context
+                else
+                {
+                    hasItems.wait_for(lck, std::chrono::milliseconds(timeout_ms));
+                }
             }
 
             while (mElementsFilled < mBufferSize && samplesTaken < samplesCount)
@@ -100,6 +106,7 @@ public:
                 ++mElementsFilled;
             }
         }
+        lck.unlock();
         hasItems.notify_one();
         return samplesTaken;
     }
@@ -151,6 +158,8 @@ public:
                 }
             }
         }
+        lck.unlock();
+        hasItems.notify_one();
         return samplesFilled;
     }
 
