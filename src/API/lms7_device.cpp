@@ -30,37 +30,58 @@ static const size_t LMS_PATH_TX2 = 2;
 
 const double LMS7_Device::LMS_CGEN_MAX = 640000000;
 
-LMS7_Device* LMS7_Device::CreateDevice(lime::IConnection* conn)
+LMS7_Device* LMS7_Device::CreateDevice(lime::IConnection* conn, LMS7_Device *obj)
 {
     LMS7_Device* device;
     if (conn != nullptr)
     {
         auto info = conn->GetDeviceInfo();
         if (info.deviceName == "QSpark")
-            device = new LMS7_QSpark();
-        else device = new LMS7_Device();
+            device = new LMS7_QSpark(obj);
+        else device = new LMS7_Device(obj);
         device->_Initialize(conn);
-        device->Synchronize(false);
     }
-    else device = new LMS7_Device();
+    else 
+    {
+        device = new LMS7_Device(obj);
+        device->_Initialize(nullptr);
+    }
+    if (obj != nullptr)
+        delete obj;
     return device;
 }
 
-LMS7_Device::LMS7_Device() : connection(nullptr), lms_chip_id(0)
+LMS7_Device::LMS7_Device(LMS7_Device *obj) : connection(nullptr), lms_chip_id(0)
 {
-    this->tx_channels.resize(2);
-    this->rx_channels.resize(2);
-    this->lms_list.resize(1);
+    if (obj != nullptr)
+    {
+        this->lms_list = obj->lms_list;
+        obj->lms_list.clear();
+        this->rx_channels = obj->rx_channels;
+        this->tx_channels = obj->tx_channels;
+        this->connection = obj->connection;
+        obj->connection = nullptr;
+    }
 }
 
 void LMS7_Device::_Initialize(lime::IConnection* conn)
 {
     this->tx_channels.resize(this->GetNumChannels());
-    this->rx_channels.resize(this->GetNumChannels());
-    this->lms_list.resize(0);               
-    this->lms_list.resize(this->GetNumChannels()/2);
+    this->rx_channels.resize(this->GetNumChannels());  
+    
+    while (this->lms_list.size() > this->GetNumChannels()/2)
+    {
+        delete this->lms_list.back();
+        this->lms_list.pop_back();
+    }
+    
+    while (this->lms_list.size() < this->GetNumChannels()/2)
+    {
+        this->lms_list.push_back(new lime::LMS7002M());
+    }
+    
     for (unsigned i = 0; i < this->lms_list.size(); i++)
-        this->lms_list[i].EnableValuesCache(false);
+        this->lms_list[i]->EnableValuesCache(false);
     this->SetConnection(conn);
 }
 
@@ -70,7 +91,7 @@ int LMS7_Device::SetConnection(lime::IConnection* conn)
 	lime::ConnectionRegistry::freeConnection(this->connection);
    
     for (unsigned i = 0; i < this->lms_list.size(); i++)
-        this->lms_list[i].SetConnection(conn, i);
+        this->lms_list[i]->SetConnection(conn, i);
     this->connection = conn;
     return 0;
 }
@@ -83,7 +104,7 @@ lime::IConnection* LMS7_Device::GetConnection(unsigned chan)
 
 int LMS7_Device::ConfigureRXLPF(bool enabled,int ch,float_type bandwidth)
 {
-    lime::LMS7002M* lms = &lms_list[ch/2];
+    lime::LMS7002M* lms = lms_list[ch/2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC),ch+1,true)!=0)
         return -1;
 
@@ -120,7 +141,7 @@ int LMS7_Device::ConfigureGFIR(bool enabled,bool tx, double bandwidth, size_t ch
     int div = 1;
 
     bandwidth /= 1e6;
-    lime::LMS7002M* lms = &lms_list[ch / 2];
+    lime::LMS7002M* lms = lms_list[ch / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC),ch+1,true)!=0)
         return -1;
 
@@ -260,7 +281,7 @@ int LMS7_Device::ConfigureGFIR(bool enabled,bool tx, double bandwidth, size_t ch
 
 int LMS7_Device::ConfigureTXLPF(bool enabled,int ch,double bandwidth)
 {
-    lime::LMS7002M* lms = &lms_list[ch / 2];
+    lime::LMS7002M* lms = lms_list[ch / 2];
     if (ch == 1)
     {
         if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), 2, true) != 0)
@@ -296,13 +317,18 @@ int LMS7_Device::ConfigureTXLPF(bool enabled,int ch,double bandwidth)
 
 LMS7_Device::~LMS7_Device()
 {
+    for (unsigned i = 0; i < this->lms_list.size();i++)
+        delete this->lms_list[i];
+    
+    if (this->connection != nullptr)
+	lime::ConnectionRegistry::freeConnection(this->connection);
 }
 
 int LMS7_Device::SetReferenceClock(const double refCLK_Hz)
 {
     for (unsigned i = 0; i < lms_list.size(); i++)
     {
-        lime::LMS7002M* lms = &lms_list[i];
+        lime::LMS7002M* lms = lms_list[i];
         lms->SetReferenceClk_SX(false, refCLK_Hz);
         lms->SetReferenceClk_SX(true, refCLK_Hz);
     }
@@ -362,7 +388,7 @@ int LMS7_Device::SetRate(float_type f_Hz, int oversample)
    }
    for (unsigned i = 0; i < lms_list.size(); i++)
    {
-       lime::LMS7002M* lms = &lms_list[i];
+       lime::LMS7002M* lms = lms_list[i];
        if ((lms->SetFrequencyCGEN(cgen) != 0)
            || (lms->Modify_SPI_Reg_bits(LMS7param(EN_ADCCLKH_CLKGN), 0) != 0)
            || (lms->Modify_SPI_Reg_bits(LMS7param(CLKH_OV_CLKL_CGEN), 2) != 0)
@@ -418,7 +444,7 @@ int LMS7_Device::SetRate(bool tx, float_type f_Hz, size_t oversample)
    int min_dec = 1;
    bool retain_nco = false;
 
-   lime::LMS7002M* lms = &lms_list[0];
+   lime::LMS7002M* lms = lms_list[0];
 
    for (size_t i = 0; i < GetNumChannels(false);i++)
    {
@@ -674,7 +700,7 @@ double LMS7_Device::GetRate(bool tx, size_t chan,float_type *rf_rate_Hz)
 
     double interface_Hz;
     int ratio;
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
         return -1;
 
@@ -733,7 +759,7 @@ std::vector<std::string> LMS7_Device::GetPathNames(bool dir_tx, size_t chan) con
 
 int LMS7_Device::SetPath(bool tx, size_t chan, size_t path)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
         return -1;
     if (tx==false)
@@ -754,7 +780,7 @@ int LMS7_Device::SetPath(bool tx, size_t chan, size_t path)
 
 size_t LMS7_Device::GetPath(bool tx, size_t chan)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
         return -1;
     if (tx)
@@ -858,7 +884,7 @@ int LMS7_Device::SetLPF_Fixed(bool tx,size_t chan, LPF_FixedBW bandwidth)
     if(!tx)
         return lime::ReportError(ENOTSUP, "LPF Fixed BW not supported for Rx");
     float bw = 5;
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     switch(bandwidth)
     {
         case LPF_BW_5_MHz: bw = 5e6; break;
@@ -946,7 +972,7 @@ lms_range_t LMS7_Device::GetLPFRange(bool tx, size_t chan, bool filt)
 
 int LMS7_Device::SetGFIRCoef(bool tx, size_t chan, lms_gfir_t filt, const float_type* coef,size_t count)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     short gfir[120];
     int L;
     int div = 1;
@@ -1087,7 +1113,7 @@ int LMS7_Device::SetGFIRCoef(bool tx, size_t chan, lms_gfir_t filt, const float_
 
 int LMS7_Device::GetGFIRCoef(bool tx, size_t chan, lms_gfir_t filt, float_type* coef)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
        return -1;
    int16_t coef16[120];
@@ -1107,7 +1133,7 @@ int LMS7_Device::GetGFIRCoef(bool tx, size_t chan, lms_gfir_t filt, float_type* 
 
 int LMS7_Device::SetGFIR(bool tx, size_t chan, lms_gfir_t filt, bool enabled)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
         return -1;
     if (tx)
@@ -1152,7 +1178,7 @@ int LMS7_Device::SetGFIR(bool tx, size_t chan, lms_gfir_t filt, bool enabled)
 
 int LMS7_Device::SetNormalizedGain(bool dir_tx, size_t chan,double gain)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
         return -1;
 
@@ -1209,7 +1235,7 @@ int LMS7_Device::SetNormalizedGain(bool dir_tx, size_t chan,double gain)
 
 double LMS7_Device::GetNormalizedGain(bool dir_tx, size_t chan)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
         return -1;
     if (dir_tx)
@@ -1248,7 +1274,7 @@ double LMS7_Device::GetNormalizedGain(bool dir_tx, size_t chan)
 
 int LMS7_Device::SetTestSignal(bool dir_tx, size_t chan, lms_testsig_t sig, int16_t dc_i, int16_t dc_q)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
         return -1;
 
@@ -1297,7 +1323,7 @@ int LMS7_Device::SetTestSignal(bool dir_tx, size_t chan, lms_testsig_t sig, int1
 
 int LMS7_Device::GetTestSignal(bool dir_tx, size_t chan)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), chan + 1, true) != 0)
         return -1;
 
@@ -1331,7 +1357,7 @@ int LMS7_Device::GetTestSignal(bool dir_tx, size_t chan)
 
 int LMS7_Device::SetNCOFreq(bool tx, size_t ch, const float_type *freq, float_type pho)
 {
-    lime::LMS7002M* lms = &lms_list[ch / 2];
+    lime::LMS7002M* lms = lms_list[ch / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), ch + 1, true) != 0)
         return -1;
 
@@ -1373,7 +1399,7 @@ int LMS7_Device::SetNCOFreq(bool tx, size_t ch, const float_type *freq, float_ty
 
 int LMS7_Device::SetNCO(bool tx,size_t ch,size_t ind,bool down)
 {
-    lime::LMS7002M* lms = &lms_list[ch / 2];
+    lime::LMS7002M* lms = lms_list[ch / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), ch + 1, true) != 0)
         return -1;
     if (ind >= LMS_NCO_VAL_COUNT)
@@ -1412,7 +1438,7 @@ int LMS7_Device::SetNCO(bool tx,size_t ch,size_t ind,bool down)
 
 int LMS7_Device::GetNCOFreq(bool tx, size_t ch, float_type *freq,float_type *pho)
 {
-    lime::LMS7002M* lms = &lms_list[ch / 2];
+    lime::LMS7002M* lms = lms_list[ch / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), ch + 1, true) != 0)
         return -1;
     for (size_t i = 0; i < LMS_NCO_VAL_COUNT; i++)
@@ -1425,7 +1451,7 @@ int LMS7_Device::GetNCOFreq(bool tx, size_t ch, float_type *freq,float_type *pho
 
 int LMS7_Device::SetNCOPhase(bool tx, size_t ch, const float_type *phase, float_type fcw)
 {
-    lime::LMS7002M* lms = &lms_list[ch / 2];
+    lime::LMS7002M* lms = lms_list[ch / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), ch + 1, true) != 0)
         return -1;
 
@@ -1465,7 +1491,7 @@ int LMS7_Device::SetNCOPhase(bool tx, size_t ch, const float_type *phase, float_
 
 int LMS7_Device::GetNCOPhase(bool tx, size_t ch, float_type *phase,float_type *fcw)
 {
-    lime::LMS7002M* lms = &lms_list[ch / 2];
+    lime::LMS7002M* lms = lms_list[ch / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), ch + 1, true) != 0)
         return -1;
     for (size_t i = 0; i < LMS_NCO_VAL_COUNT; i++)
@@ -1478,7 +1504,7 @@ int LMS7_Device::GetNCOPhase(bool tx, size_t ch, float_type *phase,float_type *f
 
 size_t LMS7_Device::GetNCO(bool tx, size_t ch)
 {
-    lime::LMS7002M* lms = &lms_list[ch / 2];
+    lime::LMS7002M* lms = lms_list[ch / 2];
     if (lms->Modify_SPI_Reg_bits(LMS7param(MAC), ch + 1, true) != 0)
         return -2;
     if (tx)
@@ -1498,7 +1524,7 @@ size_t LMS7_Device::GetNCO(bool tx, size_t ch)
 
 int LMS7_Device::Calibrate(bool dir_tx, size_t chan, double bw, unsigned flags)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (chan >= this->GetNumChannels(dir_tx))
     {
         lime::ReportError(EINVAL, "Invalid channel number.");
@@ -1515,7 +1541,7 @@ int LMS7_Device::Calibrate(bool dir_tx, size_t chan, double bw, unsigned flags)
 
 int LMS7_Device::SetRxFrequency(size_t chan, double f_Hz)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (f_Hz < 30e6)
     {
         if (lms->SetFrequencySX(false, 30e6) != 0)
@@ -1538,14 +1564,14 @@ int LMS7_Device::SetRxFrequency(size_t chan, double f_Hz)
 
 float_type LMS7_Device::GetTRXFrequency(bool tx, size_t chan)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
    double offset = tx ? tx_channels[chan].cF_offset_nco : rx_channels[chan].cF_offset_nco;
    return lms->GetFrequencySX(tx) - offset;
 }
 
 int LMS7_Device::SetTxFrequency(size_t chan, double f_Hz)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (f_Hz < 30e6)
     {
         if (lms->SetFrequencySX(true, 30e6) != 0)
@@ -1580,7 +1606,7 @@ int LMS7_Device::Init()
     this->Reset();
     for (unsigned i = 0; i < lms_list.size(); i++)
     {
-        lime::LMS7002M* lms = &lms_list[i];
+        lime::LMS7002M* lms = lms_list[i];
 
         lms->SetActiveChannel(lime::LMS7002M::ChA);
         if (lms->Modify_SPI_Reg_bits(LMS7param(EN_ADCCLKH_CLKGN), 0) != 0)
@@ -1619,7 +1645,7 @@ int LMS7_Device::Reset()
 {
     for (unsigned i = 0; i < lms_list.size(); i++)
     {
-        lime::LMS7002M* lms = &lms_list[i];
+        lime::LMS7002M* lms = lms_list[i];
         if (lms->ResetChip() != 0)
             return -1;
         lms->DownloadAll();
@@ -1629,7 +1655,7 @@ int LMS7_Device::Reset()
 
 int LMS7_Device::EnableChannel(bool dir_tx, size_t chan, bool enabled)
 {
-    lime::LMS7002M* lms = &lms_list[chan / 2];
+    lime::LMS7002M* lms = lms_list[chan / 2];
     if (chan >= this->GetNumChannels(dir_tx))
     {
         lime::ReportError(EINVAL, "Invalid channel number.");
@@ -1754,7 +1780,7 @@ int LMS7_Device::ProgramFW(std::string fname, lms_target_t mode,lime::IConnectio
 
 int LMS7_Device::ProgramMCU(const char* data, size_t len, lms_target_t target,lime::IConnection::ProgrammingCallback callback)
 {
-    lime::MCU_BD *mcu = lms_list.at(lms_chip_id).GetMCUControls();
+    lime::MCU_BD *mcu = lms_list.at(lms_chip_id)->GetMCUControls();
     lime::IConnection::MCU_PROG_MODE mode;
     uint8_t bin[lime::MCU_BD::cMaxFWSize];
 
@@ -1780,8 +1806,8 @@ int LMS7_Device::ProgramMCU(const char* data, size_t len, lms_target_t target,li
         lime::ReportError(ENOTSUP, "Unsupported target storage type");
         return -1;
     }
-
-    mcu->callback = callback;
+ 
+   mcu->callback = callback;
     mcu->Program_MCU(bin,mode);
     mcu->callback = nullptr;
     return 0;
@@ -1804,7 +1830,7 @@ int LMS7_Device::DACRead()
 
 int LMS7_Device::GetVCORange(size_t vco_id, lms_range_t* range)
 {
-     lime::LMS7002M* lms = &lms_list[0];
+     lime::LMS7002M* lms = lms_list[0];
     if (vco_id < 3)
     {
         range->min = lms->gVCO_frequency_table[vco_id][0];
@@ -1825,7 +1851,7 @@ int LMS7_Device::GetVCORange(size_t vco_id, lms_range_t* range)
 
 int LMS7_Device::SetVCORange(size_t vco_id, lms_range_t range)
 {
-    lime::LMS7002M* lms = &lms_list[0];
+    lime::LMS7002M* lms = lms_list[0];
     if (vco_id < 3)
     {
         lms->gVCO_frequency_table[vco_id][0] = range.min;
@@ -1849,22 +1875,22 @@ int LMS7_Device::GetClockFreq(size_t clk_id, float_type *freq)
     switch (clk_id)
     {
     case LMS_CLOCK_REF:
-        *freq = lms_list.at(lms_chip_id).GetReferenceClk_SX(lime::LMS7002M::Rx);
+        *freq = lms_list.at(lms_chip_id)->GetReferenceClk_SX(lime::LMS7002M::Rx);
         return 0;
     case LMS_CLOCK_SXR:
-        *freq = lms_list.at(lms_chip_id).GetFrequencySX(false);
+        *freq = lms_list.at(lms_chip_id)->GetFrequencySX(false);
         return 0;
     case LMS_CLOCK_SXT:
-        *freq = lms_list.at(lms_chip_id).GetFrequencySX(true);
+        *freq = lms_list.at(lms_chip_id)->GetFrequencySX(true);
         return 0;
     case LMS_CLOCK_CGEN:
-        *freq = lms_list.at(lms_chip_id).GetFrequencyCGEN();
+        *freq = lms_list.at(lms_chip_id)->GetFrequencyCGEN();
         return 0;
     case LMS_CLOCK_RXTSP:
-        *freq = lms_list.at(lms_chip_id).GetReferenceClk_TSP(false);
+        *freq = lms_list.at(lms_chip_id)->GetReferenceClk_TSP(false);
         return 0;
     case LMS_CLOCK_TXTSP:
-        *freq = lms_list.at(lms_chip_id).GetReferenceClk_TSP(true);
+        *freq = lms_list.at(lms_chip_id)->GetReferenceClk_TSP(true);
         return 0;
     default:
         lime::ReportError(EINVAL, "Invalid clock ID.");
@@ -1874,7 +1900,7 @@ int LMS7_Device::GetClockFreq(size_t clk_id, float_type *freq)
 
 int LMS7_Device::SetClockFreq(size_t clk_id, float_type freq)
 {
-    lime::LMS7002M* lms = &lms_list[lms_chip_id];
+    lime::LMS7002M* lms = lms_list[lms_chip_id];
     switch (clk_id)
     {
     case LMS_CLOCK_REF:
@@ -1953,9 +1979,9 @@ int LMS7_Device::Synchronize(bool toChip)
     {
         int ret;
         if (toChip)
-            ret = lms_list[i].UploadAll();
+            ret = lms_list[i]->UploadAll();
         else
-            ret = lms_list[i].DownloadAll();
+            ret = lms_list[i]->DownloadAll();
         if (ret != 0)
             return ret;
     }
@@ -1965,50 +1991,50 @@ int LMS7_Device::Synchronize(bool toChip)
 int LMS7_Device::SetLogCallback(void(*func)(const char* cstr, const unsigned int type))
 {
     for (unsigned i = 0; i < lms_list.size(); i++)
-        lms_list[i].SetLogCallback(func);
+        lms_list[i]->SetLogCallback(func);
     return 0;
 }
 
 int LMS7_Device::EnableCalibCache(bool enable)
 {
     for (unsigned i = 0; i < lms_list.size(); i++)
-        lms_list[i].EnableValuesCache(enable);
+        lms_list[i]->EnableValuesCache(enable);
     return 0;
 }
 
 int LMS7_Device::GetChipTemperature(size_t ind, float_type *temp)
 {
-    *temp = lms_list[this->lms_chip_id].GetTemperature();
+    *temp = lms_list[this->lms_chip_id]->GetTemperature();
     return 0;
 }
 
 int LMS7_Device::LoadConfig(const char *filename)
 {
-    return lms_list[this->lms_chip_id].LoadConfig(filename);
+    return lms_list[this->lms_chip_id]->LoadConfig(filename);
 }
 
 int LMS7_Device::SaveConfig(const char *filename)
 {
-    return lms_list[this->lms_chip_id].SaveConfig(filename);
+    return lms_list[this->lms_chip_id]->SaveConfig(filename);
 }
 
 int LMS7_Device::ReadLMSReg(uint16_t address, uint16_t *val)
 {
     int status;
-    *val = lms_list.at(lms_chip_id).SPI_read(address & 0xFFFF, true, &status);
+    *val = lms_list.at(lms_chip_id)->SPI_read(address & 0xFFFF, true, &status);
     return status;
 }
 
 int LMS7_Device::WriteLMSReg(uint16_t address, uint16_t val)
 {
-    return lms_list.at(lms_chip_id).SPI_write(address & 0xFFFF, val);
+    return lms_list.at(lms_chip_id)->SPI_write(address & 0xFFFF, val);
 }
 
 int LMS7_Device::RegisterTest()
 {
     for (unsigned i = 0; i < lms_list.size(); i++)
     {
-        if (lms_list[i].RegistersTest() != 0)
+        if (lms_list[i]->RegistersTest() != 0)
             return -1;
     }
     return 0;
@@ -2019,7 +2045,7 @@ int LMS7_Device::ReadParam(struct LMS7Parameter param, uint16_t *val)
     bool forceReadFromChip = false; //bypass returning values from cache
     //registers containing read only registers, which values can change
     const uint16_t readOnlyRegs[] = { 0, 1, 2, 3, 4, 5, 6, 0x002F, 0x008C, 0x00A8, 0x00A9, 0x00AA, 0x00AB, 0x00AC, 0x0123, 0x0209, 0x020A, 0x020B, 0x040E, 0x040F };
-    for (int i = 0; i < sizeof(readOnlyRegs) / sizeof(uint16_t); ++i)
+    for (unsigned i = 0; i < sizeof(readOnlyRegs) / sizeof(uint16_t); ++i)
     {
         if (param.address == readOnlyRegs[i])
         {
@@ -2027,13 +2053,13 @@ int LMS7_Device::ReadParam(struct LMS7Parameter param, uint16_t *val)
             break;
         }
     }
-    *val = lms_list.at(lms_chip_id).Get_SPI_Reg_bits(param, forceReadFromChip);
+    *val = lms_list.at(lms_chip_id)->Get_SPI_Reg_bits(param, forceReadFromChip);
     return LMS_SUCCESS;
 }
 
 int LMS7_Device::WriteParam(struct LMS7Parameter param, uint16_t val)
 {
-    return lms_list.at(lms_chip_id).Modify_SPI_Reg_bits(param, val);
+    return lms_list.at(lms_chip_id)->Modify_SPI_Reg_bits(param, val);
 }
 
 int LMS7_Device::SetActiveChip(unsigned ind)
@@ -2047,7 +2073,8 @@ int LMS7_Device::SetActiveChip(unsigned ind)
     return 0;
 }
 
-LMS7_QSpark::LMS7_QSpark() : LMS7_Device()
+
+LMS7_QSpark::LMS7_QSpark(LMS7_Device *obj) : LMS7_Device(obj)
 {
     this->streamPort=nullptr;
 }

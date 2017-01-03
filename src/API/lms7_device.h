@@ -32,10 +32,9 @@ class LIME_API LMS7_Device
         float_type cF_offset_nco;
         float_type sample_rate;
     };
-
 public:
-    LMS7_Device();
-    ~LMS7_Device();
+    LMS7_Device(LMS7_Device *obj = nullptr);
+    virtual ~LMS7_Device();
     virtual int SetConnection(lime::IConnection* conn);
     virtual lime::IConnection* GetConnection(unsigned chan =0);
     int Init();
@@ -101,16 +100,15 @@ public:
     int ReadParam(struct LMS7Parameter param, uint16_t *val);
     int WriteParam(struct LMS7Parameter param, uint16_t val);
     int SetActiveChip(unsigned ind);
-    static LMS7_Device* CreateDevice(lime::IConnection* conn);
+    static LMS7_Device* CreateDevice(lime::IConnection* conn, LMS7_Device *obj = nullptr);
     std::map<std::string, double> extra_parameters;
 protected:
-
     lms_dev_info_t devInfo;
     std::vector<lms_channel_info> tx_channels;
     std::vector<lms_channel_info> rx_channels;
     static const double LMS_CGEN_MAX;
     lime::IConnection* connection;
-    std::vector<lime::LMS7002M> lms_list;
+    std::vector<lime::LMS7002M*> lms_list;
     int ConfigureRXLPF(bool enabled,int ch,float_type bandwidth);
     int ConfigureTXLPF(bool enabled,int ch,float_type bandwidth);
     int ConfigureGFIR(bool enabled,bool tx, float_type bandwidth,size_t ch);
@@ -121,7 +119,7 @@ protected:
 class LIME_API LMS7_QSpark : public LMS7_Device
 {
 public:
-    LMS7_QSpark();
+    LMS7_QSpark(LMS7_Device *obj = nullptr);
     size_t GetNumChannels(const bool tx = false) const;
     int SetConnection(lime::IConnection* conn);
     lime::IConnection* GetConnection(unsigned chan = 0);

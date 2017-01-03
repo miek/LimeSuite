@@ -49,9 +49,9 @@ API_EXPORT int CALL_CONV LMS_Open(lms_device_t** device, lms_info_str_t info, vo
 
     std::vector<lime::ConnectionHandle> handles;
     handles = lime::ConnectionRegistry::findConnections();
-
-    if (*device != nullptr)
-        LMS_Close(*device);
+    LMS7_Device* lms = (LMS7_Device*)*device;
+    if (lms != nullptr)
+        lms->SetConnection(nullptr);
 
     for (size_t i = 0; i < handles.size(); i++)
     {
@@ -69,7 +69,7 @@ API_EXPORT int CALL_CONV LMS_Open(lms_device_t** device, lms_info_str_t info, vo
                 else
                     continue;
             }
-            *device = LMS7_Device::CreateDevice(conn);
+            *device = LMS7_Device::CreateDevice(conn,lms);
             return LMS_SUCCESS;
         }
     }
@@ -1660,6 +1660,7 @@ API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqR
     lms->extra_parameters["DAC_MHz"] = clocks[1].rd_actualFrequency;
     *freqTxMHz = clocks[1].rd_actualFrequency;
     *freqRxMHz = clocks[0].rd_actualFrequency;
+    return 0;
 }
 
 API_EXPORT int CALL_CONV LMS_GetExtraParam(lms_device_t *device, const char* name, double* value)
