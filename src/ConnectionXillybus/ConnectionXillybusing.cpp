@@ -38,7 +38,7 @@ int ConnectionXillybus::UpdateExternalDataRate(const size_t channel, const doubl
         clocks[1].bypass = false;
         clocks[1].index = 1;
         clocks[1].outFrequency = txInterfaceClk;
-        clocks[1].phaseShift_deg = 90;
+        clocks[1].phaseShift_deg = txphase;
         status = lime::fpga::SetPllFrequency(this, 0, txInterfaceClk, clocks, 2);
     }
     else
@@ -56,7 +56,7 @@ int ConnectionXillybus::UpdateExternalDataRate(const size_t channel, const doubl
         clocks[1].bypass = false;
         clocks[1].index = 1;
         clocks[1].outFrequency = rxInterfaceClk;
-        clocks[1].phaseShift_deg = 90;
+        clocks[1].phaseShift_deg = rxphase;
         status = lime::fpga::SetPllFrequency(this, 1, rxInterfaceClk, clocks, 2);
     }
     else

@@ -53,9 +53,8 @@ void LMS7SuiteAppFrame::HandleLMSevent(wxCommandEvent& event)
     {
         LMS_GetClockFreq(lmsControl,LMS_CLOCK_CGEN,&freq);
         double phaseTx, phaseRx;
-        mContent->mTabCGEN->txtPhase->GetValue().ToDouble(&phaseTx);
-        mContent->mTabCGEN->rxPhase->GetValue().ToDouble(&phaseRx);
-        printf("Phase: RX: %f; TX: %f", phaseRx, phaseTx);
+        phaseTx =mContent->mTabCGEN->txPhase->GetValue();
+        phaseRx =mContent->mTabCGEN->rxPhase->GetValue();
         int status = LMS_SetClockFreq(lmsControl, LMS_CLOCK_CGEN, freq, phaseTx, phaseRx);
         if (status == 0)
         {

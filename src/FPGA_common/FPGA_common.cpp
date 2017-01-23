@@ -146,7 +146,7 @@ int SetPllFrequency(IConnection* serPort, uint8_t pllIndex, const double inputFr
     addrs.push_back(0x0023); values.push_back(reg23val & ~PLLRST_START);
 
     //configure FPGA PLLs
-    const double vcoLimits_Hz[2] = { 600e6, 1300e6 };
+    const double vcoLimits_Hz[2] = { 600e6, 1050e6 };
 
     map< unsigned long, int> availableVCOs; //all available frequencies for VCO
     for(int i=0; i<clockCount; ++i)
@@ -200,7 +200,7 @@ int SetPllFrequency(IConnection* serPort, uint8_t pllIndex, const double inputFr
                 }
             }
             double deviation = fabs(it.first - inputFreq*Mtemp / Ntemp);
-            if(deviation < bestDeviation)
+            if(deviation <= bestDeviation)
             {
                 bestDeviation = deviation;
                 Fvco = it.first;
@@ -293,9 +293,9 @@ int SetPllFrequency(IConnection* serPort, uint8_t pllIndex, const double inputFr
             reg23val &= ~PHCFG_UPDN;
         addrs.push_back(0x0023); values.push_back(reg23val); //PHCFG_UpDn, CNT_IND
         addrs.push_back(0x0023); values.push_back(reg23val | PHCFG_START);
-#ifdef LMS_VERBOSE_OUTPUT
+//#ifdef LMS_VERBOSE_OUTPUT
         printf("C%i=%i, Fout=%3.3f MHz, CNT_IND=%i, nSteps=%i, phaseShift=%.1f\n", i, C, clocks[i].rd_actualFrequency / 1e6, cnt_ind, nSteps, nSteps*Fstep_deg);
-#endif
+//#endif
         if(serPort->WriteRegisters(addrs.data(), values.data(), values.size()) != 0)
             ReportError(EIO, "SetPllFrequency: PHCFG, failed to write registers");
         addrs.clear();

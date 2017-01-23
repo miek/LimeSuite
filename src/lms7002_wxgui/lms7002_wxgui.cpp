@@ -3497,17 +3497,19 @@ pnlCLKGEN_view::pnlCLKGEN_view( wxWindow* parent, wxWindowID id, const wxPoint& 
 	ID_STATICTEXT101->Wrap( -1 );
 	bSizer11->Add( ID_STATICTEXT101, 0, wxALL, 5 );
 	
-	rxPhase = new wxTextCtrl( sbSizer70->GetStaticBox(), wxID_ANY, wxT("125"), wxDefaultPosition, wxSize( 48,-1 ), 0 );
-	rxPhase->SetMaxLength( 0 ); 
+	rxPhase = new wxSpinCtrl( sbSizer70->GetStaticBox(), ID_GCORRQ_RXTSP, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxSP_ARROW_KEYS, -360, 360, 125 );
+	rxPhase->SetMinSize( wxSize( 48,-1 ) );
+	
 	bSizer11->Add( rxPhase, 0, wxALL, 5 );
 	
 	ID_STATICTEXT102 = new wxStaticText( sbSizer70->GetStaticBox(), wxID_ANY, wxT("Tx phase"), wxDefaultPosition, wxDefaultSize, 0 );
 	ID_STATICTEXT102->Wrap( -1 );
 	bSizer11->Add( ID_STATICTEXT102, 0, wxALL, 5 );
 	
-	txtPhase = new wxTextCtrl( sbSizer70->GetStaticBox(), wxID_ANY, wxT("125"), wxDefaultPosition, wxSize( 48,-1 ), 0 );
-	txtPhase->SetMaxLength( 0 ); 
-	bSizer11->Add( txtPhase, 0, wxALL, 5 );
+	txPhase = new wxSpinCtrl( sbSizer70->GetStaticBox(), ID_GCORRQ_RXTSP, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxSP_ARROW_KEYS, -360, 360, 125 );
+	txPhase->SetMinSize( wxSize( 48,-1 ) );
+	
+	bSizer11->Add( txPhase, 0, wxALL, 5 );
 	
 	
 	sbSizer70->Add( bSizer11, 1, wxEXPAND, 5 );
@@ -3774,6 +3776,8 @@ pnlCLKGEN_view::pnlCLKGEN_view( wxWindow* parent, wxWindowID id, const wxPoint& 
 	cmbCZ_CGEN->Connect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( pnlCLKGEN_view::ParameterChangeHandler ), NULL, this );
 	cmbEN_ADCCLKH_CLKGN->Connect( wxEVT_COMMAND_RADIOBOX_SELECTED, wxCommandEventHandler( pnlCLKGEN_view::ParameterChangeHandler ), NULL, this );
 	cmbCLKH_OV_CLKL_CGEN->Connect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( pnlCLKGEN_view::ParameterChangeHandler ), NULL, this );
+	rxPhase->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( pnlCLKGEN_view::onbtnCalculateClick ), NULL, this );
+	txPhase->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( pnlCLKGEN_view::onbtnCalculateClick ), NULL, this );
 	btnCalculate->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( pnlCLKGEN_view::onbtnCalculateClick ), NULL, this );
 	btnTune->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( pnlCLKGEN_view::onbtnTuneClick ), NULL, this );
 	btnUpdateValues1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( pnlCLKGEN_view::OnbtnReadComparators ), NULL, this );
@@ -3813,6 +3817,8 @@ pnlCLKGEN_view::~pnlCLKGEN_view()
 	cmbCZ_CGEN->Disconnect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( pnlCLKGEN_view::ParameterChangeHandler ), NULL, this );
 	cmbEN_ADCCLKH_CLKGN->Disconnect( wxEVT_COMMAND_RADIOBOX_SELECTED, wxCommandEventHandler( pnlCLKGEN_view::ParameterChangeHandler ), NULL, this );
 	cmbCLKH_OV_CLKL_CGEN->Disconnect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( pnlCLKGEN_view::ParameterChangeHandler ), NULL, this );
+	rxPhase->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( pnlCLKGEN_view::onbtnCalculateClick ), NULL, this );
+	txPhase->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( pnlCLKGEN_view::onbtnCalculateClick ), NULL, this );
 	btnCalculate->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( pnlCLKGEN_view::onbtnCalculateClick ), NULL, this );
 	btnTune->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( pnlCLKGEN_view::onbtnTuneClick ), NULL, this );
 	btnUpdateValues1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( pnlCLKGEN_view::OnbtnReadComparators ), NULL, this );
@@ -7648,7 +7654,7 @@ pnlRxTSP_view::pnlRxTSP_view( wxWindow* parent, wxWindowID id, const wxPoint& po
 	ID_STATICTEXT11->Wrap( -1 );
 	fgSizer137->Add( ID_STATICTEXT11, 0, wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 0 );
 	
-	cmbGFIR1_N_RXTSP = new wxSpinCtrl( sbSizer100->GetStaticBox(), ID_GFIR1_N_RXTSP, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxSP_ARROW_KEYS, 0, 255, 255 );
+	cmbGFIR1_N_RXTSP = new wxSpinCtrl( sbSizer100->GetStaticBox(), ID_GFIR1_N_RXTSP, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxSP_ARROW_KEYS, 0, 255, 254 );
 	cmbGFIR1_N_RXTSP->SetMinSize( wxSize( 48,-1 ) );
 	
 	fgSizer137->Add( cmbGFIR1_N_RXTSP, 0, wxEXPAND, 5 );

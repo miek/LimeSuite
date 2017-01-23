@@ -24,7 +24,7 @@
 #ifndef NDEBUG
 IMPLEMENT_APP_CONSOLE(lms7suiteApp);
 #else
-IMPLEMENT_APP(lms7suiteApp);
+IMPLEMENT_APP_CONSOLE(lms7suiteApp);
 #endif
 
 #include "resources/splash.h"

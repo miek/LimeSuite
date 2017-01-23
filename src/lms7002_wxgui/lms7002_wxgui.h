@@ -997,6 +997,7 @@ class pnlCLKGEN_view : public wxPanel
 			ID_CZ_CGEN,
 			ID_EN_ADCCLKH_CLKGN,
 			ID_CLKH_OV_CLKL_CGEN,
+			ID_GCORRQ_RXTSP,
 			ID_INT_SDM_CGEN,
 			ID_FRAC_SDM_CGEN,
 			ID_VCO_CMPHO_CGEN,
@@ -1084,6 +1085,7 @@ class pnlCLKGEN_view : public wxPanel
 		
 		// Virtual event handlers, overide them in your derived class
 		virtual void ParameterChangeHandler( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onbtnCalculateClick( wxSpinEvent& event ) { event.Skip(); }
 		virtual void onbtnCalculateClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onbtnTuneClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnbtnReadComparators( wxCommandEvent& event ) { event.Skip(); }
@@ -1093,8 +1095,8 @@ class pnlCLKGEN_view : public wxPanel
 		
 	
 	public:
-		wxTextCtrl* rxPhase;
-		wxTextCtrl* txtPhase;
+		wxSpinCtrl* rxPhase;
+		wxSpinCtrl* txPhase;
 		
 		pnlCLKGEN_view( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxTAB_TRAVERSAL ); 
 		~pnlCLKGEN_view();
