@@ -17,7 +17,6 @@ void Connection_uLimeSDREntry::handle_libusb_events()
     {
         int r = libusb_handle_events_timeout_completed(ctx, &tv, NULL);
         if(r != 0) printf("error libusb_handle_events %s\n", libusb_strerror(libusb_error(r)));
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 #endif // __UNIX__
@@ -107,31 +106,38 @@ std::vector<ConnectionHandle> Connection_uLimeSDREntry::enumerate(const Connecti
                         printf("Cannot Claim Interface\n");
                     }
 
-                    std::string fullName;
-                    //check operating speed
-                    int speed = libusb_get_device_speed(devs[i]);
-                    if(speed == LIBUSB_SPEED_HIGH)
-                        fullName = "USB 2.0";
-                    else if(speed == LIBUSB_SPEED_SUPER)
-                        fullName = "USB 3.0";
-                    else
-                        fullName = "USB";
-                    fullName += " (";
-                    //read device name
-                    char data[255];
-                    memset(data, 0, 255);
-                    int st = libusb_get_string_descriptor_ascii(tempDev_handle, 2, (unsigned char*)data, 255);
-                    if(st < 0)
-                        printf("Error getting usb descriptor\n");
-                    if(strlen(data) > 0)
-                        fullName += data;
-                    fullName += ")";
-                    libusb_close(tempDev_handle);
-
-                    ConnectionHandle handle;
+                ConnectionHandle handle;
+                //check operating speed
+                int speed = libusb_get_device_speed(devs[i]);
+                if(speed == LIBUSB_SPEED_HIGH)
+                    handle.media = "USB 2.0";
+                else if(speed == LIBUSB_SPEED_SUPER)
+                    handle.media = "USB 3.0";
+                else
                     handle.media = "USB";
-                    handle.name = fullName;
-                    handle.addr = std::to_string(int(pid))+":"+std::to_string(int(vid));
+                //read device name
+                char data[255];
+                memset(data, 0, 255);
+                int st = libusb_get_string_descriptor_ascii(tempDev_handle, 2, (unsigned char*)data, 255);
+                if(st < 0)
+                    printf("Error getting usb descriptor\n");
+                if(strlen(data) > 0)
+                    handle.name = std::string(data, size_t(st));
+                handle.addr = std::to_string(int(pid))+":"+std::to_string(int(vid));
+
+                if (desc.iSerialNumber > 0)
+                {
+                    r = libusb_get_string_descriptor_ascii(tempDev_handle,desc.iSerialNumber,(unsigned char*)data, sizeof(data));
+                    if(r<0)
+                        printf("failed to get serial number\n");
+                    else
+                        handle.serial = std::string(data, size_t(r));
+                }
+                libusb_close(tempDev_handle);
+
+                //add handle conditionally, filter by serial number
+                if (hint.serial.empty() or hint.serial == handle.serial)
+                {
                     handles.push_back(handle);
                 }
             }
