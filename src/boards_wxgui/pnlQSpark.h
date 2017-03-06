@@ -13,6 +13,7 @@ class wxComboBox;
 class wxCheckBox;
 class wxTextCtrl;
 class wxChoice;
+class wxRadioButton;
 
 
 
@@ -52,6 +53,8 @@ public:
     wxSpinCtrl* spinRX_GCORRI;
     wxSpinCtrl* spinRX_PHCORR;
     wxChoice* cmbInsel;
+    wxRadioButton* rbChannelA;
+    wxRadioButton* rbChannelB;
 
     wxTextCtrl* txtNcoFreq;
 
@@ -62,6 +65,8 @@ public:
     void OnNcoFrequencyChanged(wxCommandEvent& event);
 protected:
     void OnConfigurePLL(wxCommandEvent &event);
+    void pnlQSpark::OnSwitchToChannelA(wxCommandEvent& event);
+    void pnlQSpark::OnSwitchToChannelB(wxCommandEvent& event);
 
     struct Register
     {

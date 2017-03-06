@@ -1635,13 +1635,13 @@ API_EXPORT int CALL_CONV LMS_SetActiveChipID(lms_device_t *device, unsigned id)
 API_EXPORT int CALL_CONV LMS_ReadRawBuffer(lms_device_t *device, char* buffer, unsigned length)
 {
     LMS7_Device* lms = (LMS7_Device*)device;
-    return lms->GetConnection()->ReadRawBuffer(buffer,length);
+    return lms->GetConnection(0x2)->ReadRawBuffer(buffer,length);
 }
 
 API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqRxMHz, double *freqTxMHz)
 {
     LMS7_Device* lms = (LMS7_Device*)device;
-    lime::fpga::FPGA_PLL_clock clocks[2];
+    lime::fpga::FPGA_PLL_clock clocks[3];
     //ADC
     clocks[0].bypass = false;
     clocks[0].index = 0;
@@ -1652,9 +1652,14 @@ API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqR
     clocks[1].index = 1;
     clocks[1].outFrequency = *freqTxMHz;
     clocks[1].phaseShift_deg = 0;
+    //DAC
+    clocks[2].bypass = false;
+    clocks[2].index = 2;
+    clocks[2].outFrequency = (*freqTxMHz)*2;
+    clocks[2].phaseShift_deg = 0;
 
 
-    if (lime::fpga::SetPllFrequency(lms->GetConnection(), 4, 30.72e6, clocks, 2) != 0)
+    if (lime::fpga::SetPllFrequency(lms->GetConnection(), 4, 30.72e6, clocks, 3) != 0)
         return -1;
     lms->extra_parameters["ADC_MHz"] = clocks[0].rd_actualFrequency;
     lms->extra_parameters["DAC_MHz"] = clocks[1].rd_actualFrequency;
