@@ -36,12 +36,17 @@ private:
 protected:
     OpenGLGraph* mFFT_xp;
     OpenGLGraph* mFFT_yp;
+    OpenGLGraph* mFFT_xp1;
+    OpenGLGraph* mFFT_yp1;
     OpenGLGraph* mFFT_x;
 
     OpenGLGraph* mTime_xp;
     OpenGLGraph* mTime_yp;
+    OpenGLGraph* mTime_xp1;
+    OpenGLGraph* mTime_yp1;
     OpenGLGraph* mTime_x;
     wxButton* btnCapture;
+    wxChoice* cmbLmsDevice;
     
     void OnbtnCaptureClicked(wxCommandEvent& event);
     lms_device_t *lmsControl;

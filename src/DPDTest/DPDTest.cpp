@@ -15,12 +15,14 @@ DPDTest::DPDTest( wxWindow* parent, wxWindowID id, const wxString& title, const 
 #endif
 
     wxFlexGridSizer* sizerPlots;
-    sizerPlots = new wxFlexGridSizer( 4, 2, 0, 0 );
+    sizerPlots = new wxFlexGridSizer( 6, 2, 0, 0 );
     sizerPlots->AddGrowableCol(0);
     sizerPlots->AddGrowableCol(1);
     sizerPlots->AddGrowableRow(0);
     sizerPlots->AddGrowableRow(1);
     sizerPlots->AddGrowableRow(2);
+    sizerPlots->AddGrowableRow(3);
+    sizerPlots->AddGrowableRow(4);
     
     int GLCanvasAttributes_1[] = {
         WX_GL_RGBA,
@@ -28,14 +30,23 @@ DPDTest::DPDTest( wxWindow* parent, wxWindowID id, const wxString& title, const 
         WX_GL_DEPTH_SIZE, 16,
         WX_GL_STENCIL_SIZE, 0,
         0, 0 };
+    
     mFFT_xp = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
-    sizerPlots->Add( mFFT_xp, 1, wxEXPAND, 5 );
+    sizerPlots->Add(mFFT_xp, 1, wxEXPAND, 5);
     mTime_xp = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
     sizerPlots->Add(mTime_xp, 1, wxEXPAND, 5);
     mFFT_yp = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
-    sizerPlots->Add( mFFT_yp, 1, wxEXPAND, 5 );
+    sizerPlots->Add(mFFT_yp, 1, wxEXPAND, 5);
     mTime_yp = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
     sizerPlots->Add(mTime_yp, 1, wxEXPAND, 5);
+    mFFT_xp1 = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
+    sizerPlots->Add( mFFT_xp1, 1, wxEXPAND, 5 );
+    mTime_xp1 = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
+    sizerPlots->Add(mTime_xp1, 1, wxEXPAND, 5);
+    mFFT_yp1 = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
+    sizerPlots->Add( mFFT_yp1, 1, wxEXPAND, 5 );
+    mTime_yp1 = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
+    sizerPlots->Add(mTime_yp1, 1, wxEXPAND, 5);
     mFFT_x = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
     sizerPlots->Add( mFFT_x, 1, wxEXPAND, 5 );
     mTime_x = new OpenGLGraph(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _(""), GLCanvasAttributes_1);
@@ -43,10 +54,14 @@ DPDTest::DPDTest( wxWindow* parent, wxWindowID id, const wxString& title, const 
     btnCapture = new wxButton(this, wxNewId(), _("Capture"));
     btnCapture->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(DPDTest::OnbtnCaptureClicked), NULL, this);
     sizerPlots->Add(btnCapture, 1, wxEXPAND, 5);
+   /* cmbLmsDevice = new wxChoice(this, wxNewId(), wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_LMS_CHOICE"));
+    cmbLmsDevice->Append(_T("LMS 1"));
+    cmbLmsDevice->SetSelection(cmbLmsDevice->Append(_T("LMS 2")));
+    sizerPlots->Add(cmbLmsDevice, 1, wxALIGN_RIGHT, 5);*/
 
-    OpenGLGraph* plots[] = { mFFT_xp, mFFT_yp, mFFT_x };
-    const char* signalNames[] = {"xp", "yp", "x"};
-    for (int i = 0; i < 3; ++i)
+    OpenGLGraph* plots[] = { mFFT_xp, mFFT_yp, mFFT_xp1, mFFT_yp1, mFFT_x };
+    const char* signalNames[] = { "xp0", "yp0", "xp1", "yp1", "x" };
+    for (int i = 0; i < 5; ++i)
     {
         plots[i]->settings.useVBO = true;
         plots[i]->AddSerie(new cDataSerie());
@@ -66,8 +81,8 @@ DPDTest::DPDTest( wxWindow* parent, wxWindowID id, const wxString& title, const 
         plots[i]->settings.staticGrid = true;
     }
 
-    OpenGLGraph* plotst[] = { mTime_xp, mTime_yp, mTime_x };
-    for (int i = 0; i < 3; ++i)
+    OpenGLGraph* plotst[] = { mTime_xp, mTime_yp, mTime_xp1, mTime_yp1, mTime_x };
+    for (int i = 0; i < 5; ++i)
     {
         plotst[i]->settings.markersEnabled = false;
         plotst[i]->settings.useVBO = true;
@@ -93,7 +108,7 @@ DPDTest::DPDTest( wxWindow* parent, wxWindowID id, const wxString& title, const 
     SetSizer(sizerPlots);
     Layout();
     sizerPlots->Fit(this);
-    SetSize(800, 600);
+    SetSize(1280, 720);
 }
 
 DPDTest::~DPDTest()
@@ -112,19 +127,20 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
         wxMessageBox("Not connected");
         return;
     }
-    const int bytesToRead = 12*8192;
+    const int bytesToRead = 20*8192;
     unsigned char *buffer = new unsigned char[bytesToRead];
     memset(buffer, 0, bytesToRead);
 
-
-    int bytesReceived = LMS_ReadRawBuffer(lmsControl, (char*)buffer, bytesToRead);
+    int bytesReceived = LMS_ReadDPDBuffer(lmsControl, (char*)buffer, bytesToRead);
     if (bytesReceived == bytesToRead)
     {
-        int samplesReceived = bytesReceived / 12; //one sample, 4 bytes * 3 channels
+        int samplesReceived = bytesReceived / 20; //one sample, 4 bytes * 3 channels
         //allocate memory for FFT
         kiss_fft_cfg m_fftCalcPlan = kiss_fft_alloc(samplesReceived, 0, 0, 0);
         kiss_fft_cpx* xp_samples = new kiss_fft_cpx[samplesReceived];
         kiss_fft_cpx* yp_samples = new kiss_fft_cpx[samplesReceived];
+        kiss_fft_cpx* xp1_samples = new kiss_fft_cpx[samplesReceived];
+        kiss_fft_cpx* yp1_samples = new kiss_fft_cpx[samplesReceived];
         kiss_fft_cpx* x_samples = new kiss_fft_cpx[samplesReceived];
         kiss_fft_cpx* fftCalcOut = new kiss_fft_cpx[samplesReceived];
 
@@ -154,7 +170,7 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
             xp_samples[i].i = value;
         }
  
-        unsigned offset = bytesReceived / 3;
+        unsigned offset = bytesReceived / 5;
         for (int i = 0; i < samplesReceived; i++)
         {
             value = (buffer[4 * i + offset])&0xFF;
@@ -167,7 +183,7 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
             yp_samples[i].i = value;
         }
 
-        offset *= 2;
+        offset += bytesReceived / 5;
         for (int i = 0; i < samplesReceived; i++)
         {
             value = (buffer[4 * i + offset])&0xFF;
@@ -180,9 +196,37 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
             x_samples[i].i = value;
         }
 
+        offset += bytesReceived / 5;
+        for (int i = 0; i < samplesReceived; i++)
+        {
+            value = (buffer[4 * i + offset]) & 0xFF;
+            value |= (buffer[4 * i + 1 + offset] << 8) & 0xFF00;
+            value >>= 2;
+            xp1_samples[i].r = value;
+            value = (buffer[4 * i + 2 + offset]) & 0xFF;
+            value |= (buffer[4 * i + 3 + offset] << 8) & 0xFF00;
+            value >>= 2;
+            xp1_samples[i].i = value;
+        }
+
+        offset += bytesReceived / 5;
+        for (int i = 0; i < samplesReceived; i++)
+        {
+            value = (buffer[4 * i + offset]) & 0xFF;
+            value |= (buffer[4 * i + 1 + offset] << 8) & 0xFF00;
+            value >>= 2;
+            yp1_samples[i].r = value;
+            value = (buffer[4 * i + 2 + offset]) & 0xFF;
+            value |= (buffer[4 * i + 3 + offset] << 8) & 0xFF00;
+            value >>= 2;
+            yp1_samples[i].i = value;
+        }
+
         //draw xp, yp, x samples in time domain
         PlotTimeDomain(mTime_xp, xp_samples, samplesReceived);
         PlotTimeDomain(mTime_yp, yp_samples, samplesReceived);
+        PlotTimeDomain(mTime_xp1, xp1_samples, samplesReceived);
+        PlotTimeDomain(mTime_yp1, yp1_samples, samplesReceived);
         PlotTimeDomain(mTime_x, x_samples, samplesReceived);
 
         //calculate xp FFT
@@ -192,6 +236,14 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
         //calculate yp FFT
         kiss_fft(m_fftCalcPlan, yp_samples, fftCalcOut);
         PlotFFT(mFFT_yp, fftCalcOut, samplesReceived, mLmsNyquist_MHz);
+
+        //calculate xp FFT
+        kiss_fft(m_fftCalcPlan, xp1_samples, fftCalcOut);
+        PlotFFT(mFFT_xp1, fftCalcOut, samplesReceived, mLmsNyquist_MHz);
+
+        //calculate yp FFT
+        kiss_fft(m_fftCalcPlan, yp1_samples, fftCalcOut);
+        PlotFFT(mFFT_yp1, fftCalcOut, samplesReceived, mLmsNyquist_MHz);
 
         //calculate x FFT
         kiss_fft(m_fftCalcPlan, x_samples, fftCalcOut);
@@ -206,14 +258,15 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
         kiss_fft_free(m_fftCalcPlan);
         delete xp_samples;
         delete yp_samples;
+        delete xp1_samples;
+        delete yp1_samples;
         delete x_samples;
         delete fftCalcOut;
     }
     else
-        printf("DPD received samples %d/%d", bytesReceived, bytesToRead);
+        printf("DPD received bytes %d/%d", bytesReceived, bytesToRead);
     delete buffer;
 }
-
 
 void DPDTest::SetNyquist(float LmsNyquistMHz)
 {
@@ -223,6 +276,8 @@ void DPDTest::SetNyquist(float LmsNyquistMHz)
         ADCNyquistMHz = 1;
     mFFT_xp->SetInitialDisplayArea(-LmsNyquistMHz*1000000, LmsNyquistMHz*1000000, -100, 0);
     mFFT_yp->SetInitialDisplayArea(-LmsNyquistMHz*1000000, LmsNyquistMHz*1000000, -100, 0);
+    mFFT_xp1->SetInitialDisplayArea(-LmsNyquistMHz * 1000000, LmsNyquistMHz * 1000000, -100, 0);
+    mFFT_yp1->SetInitialDisplayArea(-LmsNyquistMHz * 1000000, LmsNyquistMHz * 1000000, -100, 0);
     mFFT_x->SetInitialDisplayArea(-ADCNyquistMHz*1000000, ADCNyquistMHz*1000000, -100, 0);
 }
 

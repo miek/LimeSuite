@@ -28,7 +28,7 @@ class FPGAcontrols_wxgui: public wxFrame
         virtual void Initialize(lms_device_t* dataPort);
         virtual ~FPGAcontrols_wxgui();
 
-        int UploadFile(const wxString &filename);
+        int UploadFile(const wxString &filename, const wxString &filename2);
         wxButton* btnPlayWFM;
         wxButton* btnStopWFM;
         wxStaticText* lblProgressPercent;
@@ -36,6 +36,7 @@ class FPGAcontrols_wxgui: public wxFrame
         wxBitmapButton* btnOpenWFM;
         wxToggleButton* btnLoadOnetone;
         wxStaticText* txtFilename;
+        wxStaticText* txtFilename2;
         wxToggleButton* btnLoadCustom;
         wxToggleButton* btnLoadWCDMA;
         wxStaticText* txtDataRate;
@@ -57,6 +58,7 @@ class FPGAcontrols_wxgui: public wxFrame
 	private:
         void OnbtnUploadClick(wxCommandEvent& event);
         void OnbtnOpenFileClick(wxCommandEvent& event);
+        void OnbtnOpenFile2Click(wxCommandEvent& event);
         void OnbtnMifClick(wxCommandEvent& event);
         void OnbtnHexClick(wxCommandEvent& event);
         void OnbtnPlayWFMClick(wxCommandEvent& event);

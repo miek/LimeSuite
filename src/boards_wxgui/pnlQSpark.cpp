@@ -321,7 +321,7 @@ void pnlQSpark::OnbtnUpdateAll(wxCommandEvent& event)
     double refClk_MHz, ncoFreq_MHz;
     txtPllFreqTxMHz->GetValue().ToDouble(&refClk_MHz);
     uint32_t fcw = 0;
-    vector<uint32_t> addrs = { 0x006E, 0x006F };
+    vector<uint32_t> addrs = { 0x008E, 0x008F };
 
     for (size_t i = 0; i <addrs.size(); i++)
     {
@@ -363,7 +363,7 @@ void pnlQSpark::OnNcoFrequencyChanged(wxCommandEvent& event)
     txtPllFreqTxMHz->GetValue().ToDouble(&refClk_MHz);
     txtNcoFreq->GetValue().ToDouble(&ncoFreq_MHz);
     uint32_t fcw = (uint32_t)((ncoFreq_MHz / refClk_MHz) * 4294967296);
-    vector<uint32_t> addrs = { 0x006E, 0x006F };
+    vector<uint32_t> addrs = { 0x008E, 0x008F };
     vector<uint32_t> values = { (fcw >> 16) & 0xFFFF, fcw & 0xFFFF };
     if (!LMS_IsOpen(lmsControl,1))
     {

@@ -276,6 +276,8 @@ void LMS7SuiteAppFrame::UpdateConnections(lms_device_t* lms7controlPort)
         boardControlsGui->Initialize(lmsControl);
     if(programmer)
         programmer->SetConnection(lmsControl);
+    if (qSparkGui)
+        qSparkGui->Initialize(lmsControl);
 }
 
 

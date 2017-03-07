@@ -149,8 +149,10 @@ void ConnectionXillybusQSpark::Close()
 
 	if (hWriteStream != INVALID_HANDLE_VALUE)
 		CloseHandle(hWriteStream);
+    hWriteStream = INVALID_HANDLE_VALUE;
 	if (hReadStream != INVALID_HANDLE_VALUE)
 		CloseHandle(hReadStream);
+    hReadStream = INVALID_HANDLE_VALUE;
 #else
     control_mutex.lock();
     if( hWrite >= 0)
@@ -205,6 +207,8 @@ int ConnectionXillybusQSpark::TransferPacket(GenericPacket &pkt)
         
     CloseHandle(hWrite);
     CloseHandle(hRead);
+    hWrite = INVALID_HANDLE_VALUE;
+    hRead = INVALID_HANDLE_VALUE;
 #else
     const char writePort[] = "/dev/xillybus_control0_write_32";
     const char readPort[] = "/dev/xillybus_control0_read_32";
@@ -227,6 +231,8 @@ int ConnectionXillybusQSpark::TransferPacket(GenericPacket &pkt)
         status = LMS64CProtocol::TransferPacket(pkt);
     close(hRead);
     close(hWrite);
+    hWrite = -1;
+    hRead = -1;
 #endif
     control_mutex.unlock();
     return status;
@@ -1179,7 +1185,7 @@ int ConnectionXillybusQSpark::UpdateThreads()
     return 0;
 }
 
-int ConnectionXillybusQSpark::ReadRawBuffer(char* buffer, unsigned length)
+int ConnectionXillybusQSpark::ReadDPDBuffer(char* buffer, unsigned length)
 {
     //fpga::StopStreaming(this);
     //fpga::ResetTimestamp(this);
@@ -1193,17 +1199,93 @@ int ConnectionXillybusQSpark::ReadRawBuffer(char* buffer, unsigned length)
 
     vector<uint32_t> addrs;
     vector<uint32_t> values;
-    addrs.push_back(0x0040); values.push_back(length/12);
+    addrs.push_back(0x0040); values.push_back(length/20);
     addrs.push_back(0x0041); values.push_back(0);
     this->WriteRegisters(addrs.data(), values.data(), values.size());
     addrs.clear(); values.clear();
     addrs.push_back(0x0041); values.push_back(1);
     this->WriteRegisters(addrs.data(), values.data(), values.size());
-    int ret = ReceiveData(buffer, length, 1000);
 
-    AbortReading();
-    //fpga::StopStreaming(this);
-    return ret;
+    unsigned long totalBytesReaded = 0;
+    unsigned long bytesToRead = length;
+
+#ifndef __unix__
+
+    HANDLE epHandle = CreateFileA("\\\\.\\xillybus_stream2_read_32", GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0);
+    if (epHandle == INVALID_HANDLE_VALUE)
+    {
+        ReportError("Unable to open endpoint");
+        return -1;
+    }
+#else
+    int epHandle = open("/dev/xillybus_stream2_read_32", O_RDONLY | O_NOCTTY | O_NONBLOCK));
+    if (epHandle < 0)
+    {
+        ReportError(errno);
+        return -1;
+    }
+#endif
+    auto t1 = chrono::high_resolution_clock::now();
+    auto t2 = t1;
+
+    while (std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() < 1000)
+    {
+#ifndef __unix__
+        DWORD bytesReceived = 0;
+        OVERLAPPED	vOverlapped;
+        memset(&vOverlapped, 0, sizeof(OVERLAPPED));
+        vOverlapped.hEvent = CreateEvent(NULL, false, false, NULL);
+        ReadFile(epHandle, buffer + totalBytesReaded, bytesToRead, &bytesReceived, &vOverlapped);
+        if (::GetLastError() != ERROR_IO_PENDING)
+        {
+            CloseHandle(vOverlapped.hEvent);
+            CloseHandle(epHandle);
+            return totalBytesReaded;
+        }
+        DWORD dwRet = WaitForSingleObject(vOverlapped.hEvent, 1000);
+        if (dwRet == WAIT_OBJECT_0)
+        {
+            if (GetOverlappedResult(epHandle, &vOverlapped, &bytesReceived, TRUE) == FALSE)
+            {
+                bytesReceived = 0;
+            }
+        }
+        else
+        {
+            CancelIo(epHandle);
+            bytesReceived = 0;
+        }
+        CloseHandle(vOverlapped.hEvent);
+#else
+        int bytesReceived = 0;
+        if ((bytesReceived = read(epHandle, buffer + totalBytesReaded, bytesToRead))<0)
+        {
+            bytesReceived = 0;
+            if (errno == EINTR)
+                continue;
+            else if (errno != EAGAIN)
+            {
+                ReportError(errno);
+                close(epHandle)
+                return totalBytesReaded;
+            }
+        }
+#endif
+        totalBytesReaded += bytesReceived;
+        if (totalBytesReaded < length)
+        {
+            bytesToRead -= bytesReceived;
+            t2 = chrono::high_resolution_clock::now();
+        }
+        else
+            break;
+    }
+#ifndef __unix__
+    CloseHandle(epHandle);
+#else
+    close(epHandle)
+#endif
+    return totalBytesReaded;
 }
 
 DeviceInfo ConnectionXillybusQSpark::GetDeviceInfo(void)

@@ -76,26 +76,44 @@ FPGAcontrols_wxgui::FPGAcontrols_wxgui(wxWindow* parent,wxWindowID id,const wxSt
 	StaticBoxSizer3 = new wxStaticBoxSizer(wxHORIZONTAL, this, _T("WFM loader"));
     FlexGridSizer6 = new wxFlexGridSizer(0, 1, 5, 0);
 	FlexGridSizer6->AddGrowableCol(0);
-	FlexGridSizer8 = new wxFlexGridSizer(0, 3, 0, 5);
+    chkMIMO = new wxCheckBox(this, wxNewId(), _("MIMO"));
+    FlexGridSizer6->Add(chkMIMO, 1, wxALIGN_CENTER_VERTICAL | wxALIGN_TOP, 5);
+	FlexGridSizer8 = new wxFlexGridSizer(0, 4, 0, 5);
 	btnLoadOnetone = new wxToggleButton(this, ID_BUTTON6, _T("Onetone"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON6"));
     btnLoadOnetone->SetToolTip(_T("Loads file named onetone.wfm from ") + gWFMdirectory +_("directory"));
 	FlexGridSizer8->Add(btnLoadOnetone, 1, wxALIGN_LEFT|wxALIGN_TOP, 5);
     btnLoadWCDMA = new wxToggleButton(this, ID_BUTTON7, _T("W-CDMA"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON7"));
     btnLoadWCDMA->SetToolTip(_T("Loads file named wcdma.wfm from ") + gWFMdirectory + _("directory"));
 	FlexGridSizer8->Add(btnLoadWCDMA, 1, wxALIGN_LEFT|wxALIGN_TOP, 5);
-    chkMIMO = new wxCheckBox(this, wxNewId(), _("MIMO"));
-    FlexGridSizer8->Add(chkMIMO, 1, wxALIGN_CENTER_VERTICAL | wxALIGN_TOP, 5);
 	FlexGridSizer6->Add(FlexGridSizer8, 1, wxALIGN_LEFT|wxALIGN_TOP, 5);
+
 	FlexGridSizer10 = new wxFlexGridSizer(0, 3, 0, 5);
 	FlexGridSizer10->AddGrowableCol(2);
-    btnLoadCustom = new wxToggleButton(this, ID_BUTTON8, _T("Custom"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON8"));
-	btnLoadCustom->SetToolTip(_T("Loads user selected custom file"));
-	FlexGridSizer10->Add(btnLoadCustom, 1, wxALIGN_LEFT|wxALIGN_TOP, 5);
+    auto txtChA = new wxStaticText(this, wxNewId(), "Ch A:", wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_START, _T("ID_STATICTEXT2"));
+    FlexGridSizer10->Add(txtChA, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, 5);
 	btnOpenWFM = new wxBitmapButton(this, ID_BITMAPBUTTON1, wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FILE_OPEN")),wxART_BUTTON), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW, wxDefaultValidator, _T("ID_BITMAPBUTTON1"));
 	FlexGridSizer10->Add(btnOpenWFM, 1, wxALIGN_LEFT|wxALIGN_TOP, 5);
 	txtFilename = new wxStaticText(this, ID_STATICTEXT2, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_START, _T("ID_STATICTEXT2"));
 	FlexGridSizer10->Add(txtFilename, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-	FlexGridSizer6->Add(FlexGridSizer10, 1, wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
+    auto FlexGridSizer11 = new wxFlexGridSizer(0, 3, 0, 5);
+    FlexGridSizer11->AddGrowableCol(2);
+    auto txtChB = new wxStaticText(this, wxNewId(), "Ch B:", wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_START, _T("ID_STATICTEXT2"));
+    FlexGridSizer11->Add(txtChB, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, 5);
+    auto btnOpenWFM2 = new wxBitmapButton(this, wxNewId(), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FILE_OPEN")), wxART_BUTTON), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW, wxDefaultValidator, _T("ID_BITMAPBUTTON1"));
+    btnOpenWFM2->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(FPGAcontrols_wxgui::OnbtnOpenFile2Click), NULL, this);
+    FlexGridSizer11->Add(btnOpenWFM2, 1, wxALIGN_LEFT | wxALIGN_TOP, 5);
+    txtFilename2 = new wxStaticText(this, wxNewId(), wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_START, _T("ID_STATICTEXT2"));
+    FlexGridSizer11->Add(txtFilename2, 1, wxALL | wxEXPAND | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, 5);
+    btnLoadCustom = new wxToggleButton(this, ID_BUTTON8, _T("Upload"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON8"));
+    btnLoadCustom->SetToolTip(_T("Loads user selected custom file"));
+
+    auto StaticBoxCustom = new wxStaticBoxSizer(wxVERTICAL, this, _T("Custom"));
+
+    StaticBoxCustom->Add(FlexGridSizer10, 1, wxEXPAND | wxALIGN_LEFT | wxALIGN_TOP, 5);
+    StaticBoxCustom->Add(FlexGridSizer11, 1, wxEXPAND | wxALIGN_LEFT | wxALIGN_TOP, 5);
+    StaticBoxCustom->Add(btnLoadCustom, 1, wxALIGN_LEFT | wxALIGN_TOP, 5);
+
+    FlexGridSizer6->Add(StaticBoxCustom, 1, wxEXPAND | wxALIGN_LEFT | wxALIGN_TOP, 5);
 	FlexGridSizer3 = new wxFlexGridSizer(0, 3, 0, 0);
 	FlexGridSizer3->AddGrowableCol(1);
 	lblProgressPercent = new wxStaticText(this, ID_STATICTEXT5, _T("0 %"), wxDefaultPosition, wxSize(32,-1), 0, _T("ID_STATICTEXT5"));
@@ -207,6 +225,15 @@ void FPGAcontrols_wxgui::OnbtnOpenFileClick(wxCommandEvent& event)
     Layout();
 }
 
+void FPGAcontrols_wxgui::OnbtnOpenFile2Click(wxCommandEvent& event)
+{
+    wxFileDialog dlg(this, _("Open file"), _(""), _(""), _("wfm (*.wfm)|*.wfm"), wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+    if (dlg.ShowModal() == wxID_CANCEL)
+        return;
+    txtFilename2->SetLabelText(dlg.GetPath());
+    Layout();
+}
+
 void FPGAcontrols_wxgui::OnbtnPlayWFMClick(wxCommandEvent& event)
 {
     uint16_t regData = 0;
@@ -221,7 +248,7 @@ void FPGAcontrols_wxgui::OnbtnStopWFMClick(wxCommandEvent& event)
     LMS_WriteFPGAReg(lmsControl, 0x000D, (regData & ~0x2));
 }
 
-int FPGAcontrols_wxgui::UploadFile(const wxString &filename)
+int FPGAcontrols_wxgui::UploadFile(const wxString &filename, const wxString &filename2)
 {
     if (!lmsControl)
     {
@@ -229,51 +256,82 @@ int FPGAcontrols_wxgui::UploadFile(const wxString &filename)
         return -2;
     }
 
+    bool MIMO = chkMIMO->IsChecked();
+
     if (filename.length() == 0)
     {
         wxMessageBox(_("File not selected"), _("Error"));
         return -1;
     }
-    vector<int16_t> isamples;
-    vector<int16_t> qsamples;
-    isamples.clear();
-    qsamples.clear();
-    if( ReadWFM(filename, isamples, qsamples) < 0)
+
+    if (MIMO && filename2.length() == 0)
+    {
+        wxMessageBox(_("File not selected"), _("Error"));
+        return -1;
+    }
+    vector<int16_t> isamplesA;
+    vector<int16_t> qsamplesA;
+    vector<int16_t> isamplesB;
+    vector<int16_t> qsamplesB;
+    isamplesA.clear();
+    qsamplesA.clear();
+    isamplesB.clear();
+    qsamplesB.clear();
+
+    if( ReadWFM(filename, isamplesA, qsamplesA) < 0)
     {
         wxMessageBox(_("File not found ") + filename, _("Error"));
         return -1;
     }
-    progressBar->SetRange(isamples.size());
+
+    if (MIMO)
+    {
+        if (ReadWFM(filename2, isamplesB, qsamplesB) < 0)
+        {
+            wxMessageBox(_("File not found ") + filename2, _("Error"));
+            return -1;
+        }
+        if (isamplesA.size() > isamplesB.size())
+        {
+            isamplesA.resize(isamplesB.size());
+            qsamplesA.resize(isamplesB.size());
+        }
+        else if (isamplesB.size() > isamplesA.size())
+        {
+            isamplesB.resize(isamplesA.size());
+            qsamplesB.resize(isamplesA.size());
+        }
+    }
+
+    progressBar->SetRange(isamplesA.size());
     progressBar->SetValue(0);
 
     btnPlayWFM->Enable(false);
     btnStopWFM->Enable(false);
 
-    const uint8_t chCount = 2;
-    bool MIMO = chkMIMO->IsChecked();
-
     lime::complex16_t* src[2];
-    for(int i=0; i<chCount; ++i)
-        src[i] = new lime::complex16_t[isamples.size()];
+    src[0] = new lime::complex16_t[isamplesA.size()];
+    src[1] = new lime::complex16_t[isamplesA.size()];
 
-    for(size_t i=0; i<isamples.size(); ++i)
+    for(size_t i=0; i<isamplesA.size(); ++i)
     {
-        for(int c=0; c<chCount; ++c)
+        src[0][i].i = isamplesA[i];
+        src[0][i].q = qsamplesA[i];
+
+        if(!MIMO)
         {
-            if(c == 1 && !MIMO)
-            {
-                src[c][i].i = 0;
-                src[c][i].q = 0;
-            }
-            else
-            {
-                src[c][i].i = isamples[i];
-                src[c][i].q = qsamples[i];
-            }
+            src[1][i].i = 0;
+            src[1][i].q = 0;
         }
+        else
+        {
+            src[1][i].i = isamplesB[i];
+            src[1][i].q = qsamplesB[i];
+        }
+       
     }
 
-    int status = LMS_UploadWFM(lmsControl, (const void**)src, chCount, isamples.size(), 0);
+    int status = LMS_UploadWFM(lmsControl, (const void**)src, 2, isamplesA.size(), 0);
 
     progressBar->SetValue(progressBar->GetRange());
     lblProgressPercent->SetLabelText(_("100%"));
@@ -282,6 +340,9 @@ int FPGAcontrols_wxgui::UploadFile(const wxString &filename)
 
     btnPlayWFM->Enable(true);
     btnStopWFM->Enable(true);
+
+    delete[] src[0];
+    delete[] src[1];
 
     if (status != 0)
     {
@@ -294,7 +355,7 @@ int FPGAcontrols_wxgui::UploadFile(const wxString &filename)
 
 void FPGAcontrols_wxgui::OnbtnLoadOnetoneClick(wxCommandEvent& event)
 {
-    if (UploadFile(gWFMdirectory + _("/onetone.wfm")) < 0)
+    if (UploadFile(gWFMdirectory + _("/onetone.wfm"), gWFMdirectory + _("/onetone.wfm")) < 0)
         btnLoadOnetone->SetValue(0);
     else
     {
@@ -306,7 +367,7 @@ void FPGAcontrols_wxgui::OnbtnLoadOnetoneClick(wxCommandEvent& event)
 
 void FPGAcontrols_wxgui::OnbtnLoadWCDMAClick(wxCommandEvent& event)
 {
-    if (UploadFile(gWFMdirectory + _("/wcdma.wfm")) < 0)
+    if (UploadFile(gWFMdirectory + _("/wcdma.wfm"), gWFMdirectory + _("/wcdma.wfm")) < 0)
         btnLoadWCDMA->SetValue(0);
     else
     {
@@ -318,7 +379,7 @@ void FPGAcontrols_wxgui::OnbtnLoadWCDMAClick(wxCommandEvent& event)
 
 void FPGAcontrols_wxgui::OnbtnLoadCustomClick(wxCommandEvent& event)
 {
-    if( UploadFile(txtFilename->GetLabel()) < 0)
+    if (UploadFile(txtFilename->GetLabel(), txtFilename2->GetLabel()) < 0)
     {
         btnLoadCustom->SetValue(0);
     }

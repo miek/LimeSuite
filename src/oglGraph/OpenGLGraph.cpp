@@ -532,7 +532,7 @@ void OpenGLGraph::CalculateGrid()
 	float nmbSpan = nmbWidth*pixelXvalue;
 
 	int xlines = settings.gridXlines;  // guide of how many grid lines to use
-	float interval = settings.visibleArea.x2 - settings.visibleArea.x1; // span of x axis
+	float interval = fabs(settings.visibleArea.x2 - settings.visibleArea.x1); // span of x axis
 	float intervalPart = interval / xlines; // span of grid spacing
 	float divisor = 1; // current grid spacing
 

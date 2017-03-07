@@ -1439,6 +1439,12 @@ API_EXPORT int CALL_CONV LMS_UploadWFM(lms_device_t *device,
                                          size_t sample_count, int format)
 {
     LMS7_Device* lms = (LMS7_Device*)device;
+    auto conn = lms->GetConnection();
+    if (conn == nullptr)
+    {
+        lime::ReportError(EINVAL, "Device not connected");
+        return -1;
+    }
     lime::StreamConfig::StreamDataFormat fmt;
     switch(format)
     {
@@ -1452,7 +1458,7 @@ API_EXPORT int CALL_CONV LMS_UploadWFM(lms_device_t *device,
             fmt = lime::StreamConfig::StreamDataFormat::STREAM_COMPLEX_FLOAT32;
             break;
     }
-    return lms->GetConnection()->UploadWFM(samples, chCount, sample_count, fmt);
+    return conn->UploadWFM(samples, chCount, sample_count, fmt);
 }
 
 API_EXPORT int CALL_CONV LMS_EnableTxWFM(lms_device_t *device, const bool active)
@@ -1632,10 +1638,10 @@ API_EXPORT int CALL_CONV LMS_SetActiveChipID(lms_device_t *device, unsigned id)
     return lms->SetActiveChip(id);
 }
 
-API_EXPORT int CALL_CONV LMS_ReadRawBuffer(lms_device_t *device, char* buffer, unsigned length)
+API_EXPORT int CALL_CONV LMS_ReadDPDBuffer(lms_device_t *device, char* buffer, unsigned length)
 {
     LMS7_Device* lms = (LMS7_Device*)device;
-    return lms->GetConnection(0x2)->ReadRawBuffer(buffer,length);
+    return lms->GetConnection()->ReadDPDBuffer(buffer, length);
 }
 
 API_EXPORT int CALL_CONV LMS_QSparkConfigPLL(lms_device_t *device, double *freqRxMHz, double *freqTxMHz)
