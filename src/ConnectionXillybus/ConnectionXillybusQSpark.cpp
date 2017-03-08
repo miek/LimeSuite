@@ -1218,7 +1218,7 @@ int ConnectionXillybusQSpark::ReadDPDBuffer(char* buffer, unsigned length)
         return -1;
     }
 #else
-    int epHandle = open("/dev/xillybus_stream2_read_32", O_RDONLY | O_NOCTTY | O_NONBLOCK));
+    int epHandle = open("/dev/xillybus_stream2_read_32", O_RDONLY | O_NOCTTY | O_NONBLOCK);
     if (epHandle < 0)
     {
         ReportError(errno);
@@ -1266,7 +1266,7 @@ int ConnectionXillybusQSpark::ReadDPDBuffer(char* buffer, unsigned length)
             else if (errno != EAGAIN)
             {
                 ReportError(errno);
-                close(epHandle)
+                close(epHandle);
                 return totalBytesReaded;
             }
         }
@@ -1283,7 +1283,7 @@ int ConnectionXillybusQSpark::ReadDPDBuffer(char* buffer, unsigned length)
 #ifndef __unix__
     CloseHandle(epHandle);
 #else
-    close(epHandle)
+    close(epHandle);
 #endif
     return totalBytesReaded;
 }

@@ -251,7 +251,7 @@ void DPDTest::OnbtnCaptureClicked(wxCommandEvent& event)
         if (LMS_GetExtraParam(lmsControl, "ADC_MHz", &ADCNyquistMHz)!=0)
             ADCNyquistMHz = 1;
         else
-            ADCNyquistMHz /= 2e6;
+            ADCNyquistMHz /= 2*2e6;
         PlotFFT(mFFT_x, fftCalcOut, samplesReceived, ADCNyquistMHz);
 
         //free allocated memory
@@ -278,7 +278,7 @@ void DPDTest::SetNyquist(float LmsNyquistMHz)
     mFFT_yp->SetInitialDisplayArea(-LmsNyquistMHz*1000000, LmsNyquistMHz*1000000, -100, 0);
     mFFT_xp1->SetInitialDisplayArea(-LmsNyquistMHz * 1000000, LmsNyquistMHz * 1000000, -100, 0);
     mFFT_yp1->SetInitialDisplayArea(-LmsNyquistMHz * 1000000, LmsNyquistMHz * 1000000, -100, 0);
-    mFFT_x->SetInitialDisplayArea(-ADCNyquistMHz*1000000, ADCNyquistMHz*1000000, -100, 0);
+    mFFT_x->SetInitialDisplayArea(-ADCNyquistMHz*1000000, ADCNyquistMHz*1000000/2, -100, 0);
 }
 
 /** @brief Normalizes the fft output and displays results in given graph

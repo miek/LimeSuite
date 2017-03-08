@@ -65,8 +65,8 @@ public:
     void OnNcoFrequencyChanged(wxCommandEvent& event);
 protected:
     void OnConfigurePLL(wxCommandEvent &event);
-    void pnlQSpark::OnSwitchToChannelA(wxCommandEvent& event);
-    void pnlQSpark::OnSwitchToChannelB(wxCommandEvent& event);
+    void OnSwitchToChannelA(wxCommandEvent& event);
+    void OnSwitchToChannelB(wxCommandEvent& event);
 
     struct Register
     {
