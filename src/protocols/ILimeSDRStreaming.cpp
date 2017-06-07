@@ -264,6 +264,8 @@ int ILimeSDRStreaming::StreamChannel::Read(void* samples, const uint32_t count, 
 int ILimeSDRStreaming::StreamChannel::Write(const void* samples, const uint32_t count, const Metadata *meta, const int32_t timeout_ms)
 {
     int pushed = 0;
+    if (config.isTx && mActive && mStreamer->txRunning.load() == false)
+        mStreamer->UpdateThreads();
     if(config.format == StreamConfig::STREAM_COMPLEX_FLOAT32 && config.isTx)
     {
         const float* samplesFloat = (const float*)samples;
@@ -352,8 +354,8 @@ ILimeSDRStreaming::Streamer::~Streamer()
 
 int ILimeSDRStreaming::Streamer::SetupStream(size_t& streamID, const StreamConfig& config)
 {
-    if(rxRunning.load() == true || txRunning.load() == true)
-        return ReportError(EPERM, "All streams must be stopped before doing setups");
+    /*if(rxRunning.load() == true || txRunning.load() == true)
+        return ReportError(EPERM, "All streams must be stopped before doing setups");*/
     streamID = ~0;
     StreamChannel* stream = new StreamChannel(this,config);
     //TODO check for duplicate streams
@@ -597,6 +599,8 @@ int ILimeSDRStreaming::Streamer::UpdateThreads(bool stopAll)
     }
     if(needTx and not txRunning.load())
     {
+        if (txThread.joinable())
+            txThread.join();
         txRunning.store(true);
         terminateTx.store(false);
         txThread = std::thread(dataPort->TxLoopFunction, this);
