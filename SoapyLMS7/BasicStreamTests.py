@@ -15,6 +15,7 @@ class TestBasicStreaming(unittest.TestCase):
             self.sdr.setSampleRate(SOAPY_SDR_TX, ch, 10e6)
         self.rxStream = self.sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, [0, 1])
         self.txStream = self.sdr.setupStream(SOAPY_SDR_TX, SOAPY_SDR_CF32, [0, 1])
+        print self.sdr.readStreamStatus(self.txStream)
 
     def tearDown(self):
         self.sdr.closeStream(self.rxStream)
